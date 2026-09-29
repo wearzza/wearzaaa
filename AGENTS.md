@@ -8,3 +8,6 @@
 > Commits you push to the connected branch sync back to Lovable and show up in
 > the editor, so keep the branch in a working state.
 <!-- LOVABLE:END -->
+
+- Keep a checked-in public Supabase configuration fallback in `src/lib/publicConfig.ts` because deployments may omit ignored `.env` files.
+- Reuse `PasswordField` for every password input so visibility behavior stays accessible and consistent.

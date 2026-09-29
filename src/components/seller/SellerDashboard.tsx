@@ -3,12 +3,14 @@ import { supabase, Product, Order, PromoCode, Review, ProductCategory, Seller } 
 import { useSeller } from '../../contexts/SellerContext';
 import { hashPassword } from '../../lib/auth';
 import { Store, Package, ShoppingBag, Tag, Star, Settings, LogOut, Plus, Edit, Trash2, Upload, X, Clock, CheckCircle, Bell } from 'lucide-react';
+import PasswordField from '../PasswordField';
 
 type Tab = 'overview' | 'products' | 'orders' | 'promos' | 'reviews' | 'notifications' | 'branding' | 'settings';
 
 export default function SellerDashboard() {
   const { seller, logout } = useSeller();
   const [tab, setTab] = useState<Tab>('overview');
+  const confirmLogout = () => { if (window.confirm('Are you sure you want to log out?')) logout(); };
 
   if (!seller) return null;
 
@@ -24,7 +26,7 @@ export default function SellerDashboard() {
           <h1 className="text-2xl font-black text-gray-900 mb-2">Account Under Review</h1>
           <p className="text-gray-500 mb-1">{statusMsg}</p>
           <p className="text-sm text-gray-400 mb-8">You will be able to access seller features once admin approves your account. Please check back later.</p>
-          <button onClick={logout} className="px-6 py-3 rounded-xl font-bold text-sm text-white" style={{ background: '#ff3b30' }}>Logout</button>
+          <button onClick={confirmLogout} className="px-6 py-3 rounded-xl font-bold text-sm text-white" style={{ background: '#ff3b30' }}>Logout</button>
         </div>
       </div>
     );
@@ -63,7 +65,7 @@ export default function SellerDashboard() {
                 <item.icon size={16} /> {item.label}
               </button>
             ))}
-            <button onClick={logout} className="flex items-center gap-2 px-3 py-2.5 rounded-xl text-sm font-medium text-gray-500 hover:bg-gray-100 transition-colors whitespace-nowrap"><LogOut size={16} /> Logout</button>
+            <button onClick={confirmLogout} className="flex items-center gap-2 px-3 py-2.5 rounded-xl text-sm font-medium text-gray-500 hover:bg-gray-100 transition-colors whitespace-nowrap"><LogOut size={16} /> Logout</button>
           </nav>
         </div>
       </aside>
@@ -636,7 +638,7 @@ function SettingsTab({ seller }: { seller: Seller }) {
           <div><label className="text-sm font-medium text-gray-700 mb-1 block">Full Name</label><input value={form.full_name} onChange={e => setForm({ ...form, full_name: e.target.value })} className="w-full px-4 py-2.5 rounded-xl border border-gray-200 text-sm focus:outline-none focus:border-red-400" /></div>
           <div><label className="text-sm font-medium text-gray-700 mb-1 block">Phone</label><input value={form.phone} onChange={e => setForm({ ...form, phone: e.target.value })} className="w-full px-4 py-2.5 rounded-xl border border-gray-200 text-sm focus:outline-none focus:border-red-400" /></div>
           <div><label className="text-sm font-medium text-gray-700 mb-1 block">Email</label><input value={form.email} onChange={e => setForm({ ...form, email: e.target.value })} className="w-full px-4 py-2.5 rounded-xl border border-gray-200 text-sm focus:outline-none focus:border-red-400" /></div>
-          <div><label className="text-sm font-medium text-gray-700 mb-1 block">New Password (leave blank to keep)</label><input type="password" value={form.password} onChange={e => setForm({ ...form, password: e.target.value })} className="w-full px-4 py-2.5 rounded-xl border border-gray-200 text-sm focus:outline-none focus:border-red-400" /></div>
+          <div><label className="text-sm font-medium text-gray-700 mb-1 block">New Password (leave blank to keep)</label><PasswordField value={form.password} onChange={password => setForm({ ...form, password })} className="w-full px-4 py-2.5 rounded-xl border border-gray-200 text-sm focus:outline-none focus:border-red-400" /></div>
           <button onClick={save} className="w-full py-3.5 rounded-xl font-bold text-white text-sm" style={{ background: 'linear-gradient(135deg, #ff3b30, #e8251a)' }}>{saved ? 'Saved!' : 'Update Settings'}</button>
         </div>
       </div>

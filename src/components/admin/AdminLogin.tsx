@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { ADMIN_EMAIL, ADMIN_PASSWORD } from '../../lib/auth';
 import { Shield, ArrowLeft } from 'lucide-react';
+import PasswordField from '../PasswordField';
 
 export default function AdminLogin({ onLogin, onBack }: { onLogin: () => void; onBack: () => void }) {
   const [email, setEmail] = useState('');
@@ -24,7 +25,7 @@ export default function AdminLogin({ onLogin, onBack }: { onLogin: () => void; o
           </div>
           <div className="space-y-4">
             <div><label className="text-sm font-medium text-gray-700 mb-1.5 block">Email</label><input type="email" value={email} onChange={e => setEmail(e.target.value)} className="w-full px-4 py-3 rounded-xl border border-gray-200 text-sm focus:outline-none focus:border-red-400" /></div>
-            <div><label className="text-sm font-medium text-gray-700 mb-1.5 block">Password</label><input type="password" value={password} onChange={e => setPassword(e.target.value)} onKeyDown={e => e.key === 'Enter' && handleLogin()} className="w-full px-4 py-3 rounded-xl border border-gray-200 text-sm focus:outline-none focus:border-red-400" /></div>
+            <div><label className="text-sm font-medium text-gray-700 mb-1.5 block">Password</label><PasswordField value={password} onChange={setPassword} onEnter={handleLogin} className="w-full px-4 py-3 rounded-xl border border-gray-200 text-sm focus:outline-none focus:border-red-400" /></div>
             {error && <p className="text-sm text-red-500">{error}</p>}
             <button onClick={handleLogin} className="w-full py-3.5 rounded-xl font-bold text-white text-sm" style={{ background: 'linear-gradient(135deg, #1a2340, #2a3360)' }}>Login</button>
           </div>
