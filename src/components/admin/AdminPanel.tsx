@@ -6,6 +6,7 @@ type Tab = 'analytics' | 'sellers' | 'orders' | 'promos' | 'banners' | 'notifica
 
 export default function AdminPanel({ onLogout }: { onLogout: () => void }) {
   const [tab, setTab] = useState<Tab>('analytics');
+  const confirmLogout = () => { if (window.confirm('Are you sure you want to log out?')) onLogout(); };
 
   const nav: { id: Tab; label: string; icon: any }[] = [
     { id: 'analytics', label: 'Analytics', icon: BarChart3 },
@@ -30,7 +31,7 @@ export default function AdminPanel({ onLogout }: { onLogout: () => void }) {
                 <item.icon size={16} /> {item.label}
               </button>
             ))}
-            <button onClick={onLogout} className="flex items-center gap-2 px-3 py-2.5 rounded-xl text-sm font-medium text-gray-500 hover:bg-gray-100 transition-colors whitespace-nowrap"><LogOut size={16} /> Logout</button>
+            <button onClick={confirmLogout} className="flex items-center gap-2 px-3 py-2.5 rounded-xl text-sm font-medium text-gray-500 hover:bg-gray-100 transition-colors whitespace-nowrap"><LogOut size={16} /> Logout</button>
           </nav>
         </div>
       </aside>

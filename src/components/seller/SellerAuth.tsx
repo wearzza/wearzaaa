@@ -4,6 +4,7 @@ import { hashPassword, verifyPassword } from '../../lib/auth';
 import { useSeller } from '../../contexts/SellerContext';
 import { PROVINCES, getDistricts, getMunicipalities } from '../../lib/nepalLocations';
 import { Store, ArrowLeft, Check, Camera, Upload, Shield, FileText, MapPin, Navigation, CreditCard } from 'lucide-react';
+import PasswordField from '../PasswordField';
 
 interface Props {
   onBack: () => void;
@@ -149,7 +150,7 @@ export default function SellerAuth({ onBack, onSuccess }: Props) {
               </div>
               <div>
                 <label className="text-sm font-medium text-gray-700 mb-1.5 block">Password</label>
-                <input type="password" value={loginForm.password} onChange={e => setLoginForm({ ...loginForm, password: e.target.value })} onKeyDown={e => e.key === 'Enter' && handleLogin()} className="w-full px-4 py-3 rounded-xl border border-gray-200 text-sm focus:outline-none focus:border-red-400" />
+                <PasswordField value={loginForm.password} onChange={password => setLoginForm({ ...loginForm, password })} onEnter={handleLogin} className="w-full px-4 py-3 rounded-xl border border-gray-200 text-sm focus:outline-none focus:border-red-400" />
               </div>
               {error && <p className="text-sm text-red-500">{error}</p>}
               <button onClick={handleLogin} disabled={loading} className="w-full py-3.5 rounded-xl font-bold text-white text-sm disabled:opacity-50" style={{ background: 'linear-gradient(135deg, #ff3b30, #e8251a)' }}>{loading ? 'Logging in...' : 'Login'}</button>
@@ -243,7 +244,7 @@ export default function SellerAuth({ onBack, onSuccess }: Props) {
                 </label>
                 {form.shop_logo_url && <img src={form.shop_logo_url} alt="logo" className="w-16 h-16 rounded-xl object-cover mt-2" />}
               </div>
-              <div><label className="text-sm font-medium text-gray-700 mb-1 block">Password *</label><input type="password" value={form.password} onChange={e => setForm({ ...form, password: e.target.value })} className="w-full px-4 py-2.5 rounded-xl border border-gray-200 text-sm focus:outline-none focus:border-red-400" /></div>
+              <div><label className="text-sm font-medium text-gray-700 mb-1 block">Password *</label><PasswordField value={form.password} onChange={password => setForm({ ...form, password })} className="w-full px-4 py-2.5 rounded-xl border border-gray-200 text-sm focus:outline-none focus:border-red-400" /></div>
               <button onClick={() => {
                 if (!form.full_name || !form.phone || !form.email || !form.business_name || !form.password) { setError('Please fill all required fields'); return; }
                 if (!form.province || !form.district || !form.municipality || !form.ward_number) { setError('Please complete all location fields'); return; }
