@@ -9,6 +9,45 @@ body {
   background: #f9fafb;
 }
 
+:root {
+  --background: 0 0% 100%;
+  --foreground: 218 44% 17%;
+  --card: 0 0% 100%;
+  --primary: 4 100% 59%;
+  --primary-foreground: 0 0% 100%;
+  --muted: 210 20% 96%;
+  --muted-foreground: 215 14% 43%;
+  --border: 210 16% 89%;
+  --destructive: 0 72% 48%;
+  --primary-chart: hsl(var(--primary));
+  --chart-track: hsl(var(--border));
+  --chart-blue: hsl(202 69% 46%);
+  --chart-green: hsl(154 59% 36%);
+  --chart-amber: hsl(36 85% 45%);
+  --chart-red: hsl(4 76% 54%);
+  --chart-violet: hsl(269 42% 54%);
+  --chart-slate: hsl(215 14% 43%);
+}
+
+.analytics-shell { max-width: 1440px; margin-inline: auto; }
+.analytics-title { font-size: 1.5rem; line-height: 1.2; font-weight: 800; color: hsl(var(--foreground)); }
+.analytics-panel { background: hsl(var(--card)); border: 1px solid hsl(var(--border)); border-radius: 6px; padding: 16px; }
+.analytics-panel-heading { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; }
+.analytics-panel-heading h2 { color: hsl(var(--foreground)); font-size: 0.875rem; font-weight: 700; }
+.analytics-panel-heading p, .analytics-panel-heading > span { color: hsl(var(--muted-foreground)); font-size: 0.75rem; margin-top: 2px; }
+.analytics-icon-button { width: 34px; height: 34px; display: grid; place-items: center; border: 1px solid hsl(var(--border)); border-radius: 4px; color: hsl(var(--foreground)); background: hsl(var(--card)); }
+.analytics-icon-button:hover { background: hsl(var(--muted)); }
+.splash-screen { transition: opacity 0.3s ease; }
+.splash-exit { opacity: 0; pointer-events: none; }
+.splash-content { transition: opacity 0.45s ease, transform 0.45s ease; }
+.splash-enter { opacity: 0; transform: translateY(8px); }
+.splash-progress { animation: splash-load 2.1s ease-in-out forwards; }
+@keyframes splash-load { from { width: 0; } to { width: 100%; } }
+@media (prefers-reduced-motion: reduce) {
+  .splash-screen, .splash-content { transition: none; }
+  .splash-progress { animation: none; width: 100%; }
+}
+
 .no-scrollbar::-webkit-scrollbar { display: none; }
 .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
 

@@ -1,0 +1,3 @@
+- [ ] Finish dense admin dashboard with live charts and clear loading/empty/error states.
+- [ ] Confirm password visibility throughout account flows and polish narrow-screen layouts.
+- [ ] Correct splash logo animation on white and verify desktop/mobile customer and admin flows.

@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { supabase, Seller, Order, PromoCode, Banner } from '../../lib/supabase';
-import { Shield, Store, ShoppingBag, Tag, BarChart3, Bell, LogOut, Check, X, Ban, TrendingUp, Package, Image, Plus, Edit, Trash2, Upload } from 'lucide-react';
+import AnalyticsOverview from './AnalyticsOverview';
+import { Shield, Store, ShoppingBag, Tag, BarChart3, Bell, LogOut, Check, X, Ban, Image, Plus, Edit, Trash2, Upload } from 'lucide-react';
 
 type Tab = 'analytics' | 'sellers' | 'orders' | 'promos' | 'banners' | 'notifications';
 
@@ -35,69 +36,14 @@ export default function AdminPanel({ onLogout }: { onLogout: () => void }) {
           </nav>
         </div>
       </aside>
-      <main className="flex-1 p-4 md:p-8 overflow-x-hidden">
-        {tab === 'analytics' && <AnalyticsTab />}
+      <main className="flex-1 min-w-0 p-4 md:p-8 overflow-x-hidden">
+        {tab === 'analytics' && <AnalyticsOverview />}
         {tab === 'sellers' && <SellersTab />}
         {tab === 'orders' && <OrdersTab />}
         {tab === 'promos' && <PromosTab />}
         {tab === 'banners' && <BannersTab />}
         {tab === 'notifications' && <NotificationsTab />}
       </main>
-    </div>
-  );
-}
-
-function AnalyticsTab() {
-  const [stats, setStats] = useState({ sellers: 0, pendingSellers: 0, orders: 0, revenue: 0, products: 0 });
-  const [recent, setRecent] = useState<Order[]>([]);
-
-  useEffect(() => {
-    async function load() {
-      const [s, p, o, pr, r] = await Promise.all([
-        supabase.from('sellers').select('id', { count: 'exact' }),
-        supabase.from('sellers').select('id', { count: 'exact' }).eq('status', 'pending'),
-        supabase.from('orders').select('total, status'),
-        supabase.from('products').select('id', { count: 'exact' }),
-        supabase.from('orders').select('*, sellers!inner(business_name), order_items(*)').order('created_at', { ascending: false }).limit(5),
-      ]);
-      const orders = o.data || [];
-      setStats({ sellers: s.count || 0, pendingSellers: p.count || 0, orders: orders.length, revenue: orders.filter(o => o.status === 'delivered').reduce((sum, o) => sum + o.total, 0), products: pr.count || 0 });
-      setRecent(r.data || []);
-    }
-    load();
-  }, []);
-
-  const cards = [
-    { label: 'Total Sellers', value: stats.sellers, color: '#3b82f6', icon: Store, sub: `${stats.pendingSellers} pending` },
-    { label: 'Total Orders', value: stats.orders, color: '#8b5cf6', icon: ShoppingBag, sub: 'all time' },
-    { label: 'Total Products', value: stats.products, color: '#ec4899', icon: Package, sub: 'listed' },
-    { label: 'Revenue (Delivered)', value: `Rs. ${stats.revenue.toLocaleString()}`, color: '#22c55e', icon: TrendingUp, sub: 'commission: 25%' },
-  ];
-
-  return (
-    <div>
-      <h1 className="text-2xl font-black text-gray-900 mb-6">Analytics Overview</h1>
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
-        {cards.map((c, i) => (
-          <div key={i} className="bg-white rounded-2xl p-5" style={{ boxShadow: '0 2px 16px rgba(0,0,0,0.05)' }}>
-            <div className="flex items-center justify-between mb-3"><div className="w-10 h-10 rounded-xl flex items-center justify-center" style={{ background: c.color + '15' }}><c.icon size={18} style={{ color: c.color }} /></div></div>
-            <p className="text-2xl font-black text-gray-900">{c.value}</p><p className="text-xs text-gray-400 mt-1">{c.label}</p><p className="text-xs mt-0.5" style={{ color: c.color }}>{c.sub}</p>
-          </div>
-        ))}
-      </div>
-      <h2 className="font-bold text-gray-800 mb-3">Recent Orders</h2>
-      <div className="bg-white rounded-2xl overflow-hidden" style={{ boxShadow: '0 2px 12px rgba(0,0,0,0.05)' }}>
-        {recent.length === 0 ? <p className="text-center py-8 text-gray-400 text-sm">No orders yet</p> : (
-          <div className="divide-y divide-gray-50">
-            {recent.map(o => (
-              <div key={o.id} className="p-4 flex items-center justify-between">
-                <div><p className="text-xs text-gray-400">#{o.order_number}</p><p className="text-sm font-bold text-gray-800">{o.customer_name}</p><p className="text-xs text-gray-400">{(o as any).sellers?.business_name}</p></div>
-                <div className="text-right"><p className="font-black text-sm" style={{ color: '#ff3b30' }}>Rs. {o.total.toLocaleString()}</p><span className="text-xs text-gray-400">{o.status}</span></div>
-              </div>
-            ))}
-          </div>
-        )}
-      </div>
     </div>
   );
 }
