@@ -10,7 +10,7 @@ export default {
       muted: { DEFAULT: 'hsl(var(--muted) / <alpha-value>)', foreground: 'hsl(var(--muted-foreground) / <alpha-value>)' },
       border: 'hsl(var(--border) / <alpha-value>)',
       destructive: 'hsl(var(--destructive) / <alpha-value>)',
-      chart: { blue: 'var(--chart-blue)', green: 'var(--chart-green)' },
+       chart: { blue: 'var(--chart-blue)', green: 'var(--chart-green)', amber: 'var(--chart-amber)', red: 'var(--chart-red)', violet: 'var(--chart-violet)', slate: 'var(--chart-slate)' },
     } },
   },
   plugins: [],

@@ -4,13 +4,27 @@ import { useSeller } from '../../contexts/SellerContext';
 import { hashPassword } from '../../lib/auth';
 import { Store, Package, ShoppingBag, Tag, Star, Settings, LogOut, Plus, Edit, Trash2, Upload, X, Clock, CheckCircle, Bell } from 'lucide-react';
 import PasswordField from '../PasswordField';
+import SellerAnalytics from './SellerAnalytics';
 
 type Tab = 'overview' | 'products' | 'orders' | 'promos' | 'reviews' | 'notifications' | 'branding' | 'settings';
 
 export default function SellerDashboard() {
-  const { seller, logout } = useSeller();
+  const { seller, setSeller, logout } = useSeller();
   const [tab, setTab] = useState<Tab>('overview');
   const confirmLogout = () => { if (window.confirm('Are you sure you want to log out?')) logout(); };
+
+  useEffect(() => {
+    if (!seller?.id) return;
+    let active = true;
+    const refreshStatus = async () => {
+      const { data, error } = await supabase.from('sellers').select('status').eq('id', seller.id).maybeSingle();
+      if (active && !error && data && data.status !== seller.status) setSeller({ ...seller, status: data.status });
+    };
+    refreshStatus();
+    window.addEventListener('focus', refreshStatus);
+    const timer = window.setInterval(refreshStatus, 30000);
+    return () => { active = false; window.removeEventListener('focus', refreshStatus); window.clearInterval(timer); };
+  }, [seller?.id, seller?.status, setSeller]);
 
   if (!seller) return null;
 
@@ -71,7 +85,7 @@ export default function SellerDashboard() {
       </aside>
 
       <main className="flex-1 min-w-0 p-4 md:p-8 overflow-x-hidden">
-        {tab === 'overview' && <OverviewTab seller={seller} setTab={setTab} />}
+         {tab === 'overview' && <SellerAnalytics seller={seller} onNavigate={setTab} />}
         {tab === 'products' && <ProductsTab seller={seller} />}
         {tab === 'orders' && <OrdersTab seller={seller} />}
         {tab === 'promos' && <PromosTab seller={seller} />}
@@ -80,57 +94,6 @@ export default function SellerDashboard() {
         {tab === 'branding' && <BrandingTab seller={seller} />}
         {tab === 'settings' && <SettingsTab seller={seller} />}
       </main>
-    </div>
-  );
-}
-
-function OverviewTab({ seller, setTab }: { seller: Seller; setTab: (t: Tab) => void }) {
-  const [stats, setStats] = useState({ products: 0, orders: 0, revenue: 0, pending: 0 });
-
-  useEffect(() => {
-    async function load() {
-      const [p, o] = await Promise.all([
-        supabase.from('products').select('id', { count: 'exact' }).eq('seller_id', seller.id),
-        supabase.from('orders').select('total, status').eq('seller_id', seller.id),
-      ]);
-      const orders = o.data || [];
-      setStats({ products: p.count || 0, orders: orders.length, revenue: orders.filter(o => o.status === 'delivered').reduce((s, o) => s + o.total, 0), pending: orders.filter(o => o.status === 'pending').length });
-    }
-    load();
-  }, [seller.id]);
-
-  const cards = [
-    { label: 'Total Products', value: stats.products, color: '#3b82f6', icon: Package },
-    { label: 'Total Orders', value: stats.orders, color: '#8b5cf6', icon: ShoppingBag },
-    { label: 'Pending Orders', value: stats.pending, color: '#f59e0b', icon: Clock },
-    { label: 'Revenue (Delivered)', value: `Rs. ${stats.revenue.toLocaleString()}`, color: '#22c55e', icon: CheckCircle },
-  ];
-
-  return (
-    <div>
-      <h1 className="text-2xl font-black text-gray-900 mb-6">Welcome, {seller.full_name}!</h1>
-      {seller.status === 'pending' && (
-        <div className="bg-yellow-50 border border-yellow-200 rounded-2xl p-4 mb-6 flex items-start gap-3">
-          <Clock size={20} className="text-yellow-500 flex-shrink-0 mt-0.5" />
-          <div><p className="font-bold text-yellow-800 text-sm">Account Pending Approval</p><p className="text-xs text-yellow-700 mt-1">Your seller account is awaiting admin approval. You can add products but they won't be visible to customers until approved.</p></div>
-        </div>
-      )}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
-        {cards.map((c, i) => (
-          <div key={i} className="bg-white rounded-2xl p-5" style={{ boxShadow: '0 2px 16px rgba(0,0,0,0.05)' }}>
-            <div className="w-10 h-10 rounded-xl flex items-center justify-center mb-3" style={{ background: c.color + '15' }}><c.icon size={18} style={{ color: c.color }} /></div>
-            <p className="text-2xl font-black text-gray-900">{c.value}</p><p className="text-xs text-gray-400 mt-1">{c.label}</p>
-          </div>
-        ))}
-      </div>
-      <div className="grid md:grid-cols-2 gap-4">
-        <button onClick={() => setTab('products')} className="bg-white rounded-2xl p-6 text-left hover:shadow-lg transition-all" style={{ boxShadow: '0 2px 16px rgba(0,0,0,0.05)' }}>
-          <Package size={24} style={{ color: '#ff3b30' }} /><p className="font-bold text-gray-800 mt-2">Manage Products</p><p className="text-sm text-gray-400">Add, edit, or delete your products</p>
-        </button>
-        <button onClick={() => setTab('orders')} className="bg-white rounded-2xl p-6 text-left hover:shadow-lg transition-all" style={{ boxShadow: '0 2px 16px rgba(0,0,0,0.05)' }}>
-          <ShoppingBag size={24} style={{ color: '#ff3b30' }} /><p className="font-bold text-gray-800 mt-2">View Orders</p><p className="text-sm text-gray-400">Track and update order status</p>
-        </button>
-      </div>
     </div>
   );
 }
