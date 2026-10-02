@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { supabase, Product, Order, PromoCode, Review, ProductCategory, Seller } from '../../lib/supabase';
 import { useSeller } from '../../contexts/SellerContext';
 import { hashPassword } from '../../lib/auth';
-import { Store, Package, ShoppingBag, Tag, Star, Settings, LogOut, Plus, Edit, Trash2, Upload, X, Clock, CheckCircle, Bell } from 'lucide-react';
+import { Store, Package, ShoppingBag, Tag, Star, Settings, LogOut, Plus, Edit, Trash2, Upload, X, Clock, Bell } from 'lucide-react';
 import PasswordField from '../PasswordField';
 import SellerAnalytics from './SellerAnalytics';
 
@@ -37,9 +37,9 @@ export default function SellerDashboard() {
           <div className="w-20 h-20 rounded-3xl mx-auto mb-6 flex items-center justify-center" style={{ background: statusColor + '15' }}>
             <Clock size={40} style={{ color: statusColor }} />
           </div>
-          <h1 className="text-2xl font-black text-gray-900 mb-2">Account Under Review</h1>
+           <h1 className="text-2xl font-black text-gray-900 mb-2">{seller.status === 'banned' ? 'Account Banned' : seller.status === 'rejected' ? 'Application Rejected' : 'Account Under Review'}</h1>
           <p className="text-gray-500 mb-1">{statusMsg}</p>
-          <p className="text-sm text-gray-400 mb-8">You will be able to access seller features once admin approves your account. Please check back later.</p>
+           <p className="text-sm text-gray-400 mb-8">{seller.status === 'pending' ? 'You will be able to access seller features once admin approves your account. Please check back later.' : 'Contact Wearza support if you need assistance.'}</p>
           <button onClick={confirmLogout} className="px-6 py-3 rounded-xl font-bold text-sm text-white" style={{ background: '#ff3b30' }}>Logout</button>
         </div>
       </div>

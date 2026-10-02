@@ -28,7 +28,7 @@ export default function HomePage({ onProductClick, onCategoryClick, searchQuery 
     async function load() {
       setLoading(true);
       const [p, s, b] = await Promise.all([
-        supabase.from('products').select('*, sellers!inner(*)').eq('is_active', true).order('created_at', { ascending: false }).limit(24),
+        supabase.from('products').select('*, sellers!inner(*)').eq('is_active', true).eq('sellers.status', 'approved').order('created_at', { ascending: false }).limit(24),
         supabase.from('sellers').select('*').eq('status', 'approved').limit(12),
         supabase.from('banners').select('*').eq('is_active', true).order('sort_order', { ascending: true }).limit(1).maybeSingle(),
       ]);
