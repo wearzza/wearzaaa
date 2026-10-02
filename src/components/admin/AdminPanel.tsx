@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { supabase, Seller, Order, PromoCode, Banner } from '../../lib/supabase';
+import { supabase, Seller, SellerStatus, Order, PromoCode, Banner } from '../../lib/supabase';
 import AnalyticsOverview from './AnalyticsOverview';
 import { Shield, Store, ShoppingBag, Tag, BarChart3, Bell, LogOut, Check, X, Ban, Image, Plus, Edit, Trash2, Upload } from 'lucide-react';
 
@@ -52,11 +52,26 @@ function SellersTab() {
   const [sellers, setSellers] = useState<Seller[]>([]);
   const [filter, setFilter] = useState('all');
   const [selectedSeller, setSelectedSeller] = useState<Seller | null>(null);
+  const [statusError, setStatusError] = useState('');
+  const [updatingId, setUpdatingId] = useState<string | null>(null);
 
-  async function load() { const { data } = await supabase.from('sellers').select('*').order('created_at', { ascending: false }); setSellers(data || []); }
+  async function load() { const { data, error } = await supabase.from('sellers').select('*').order('created_at', { ascending: false }); if (error) setStatusError('Could not load sellers. Please try again.'); else setSellers(data || []); }
   useEffect(() => { load(); }, []);
 
-  async function updateStatus(id: string, status: string) { await supabase.from('sellers').update({ status, updated_at: new Date().toISOString() }).eq('id', id); load(); if (selectedSeller?.id === id) setSelectedSeller(prev => prev ? { ...prev, status: status as any } : null); }
+  async function updateStatus(id: string, status: SellerStatus) {
+    const seller = sellers.find(s => s.id === id);
+    if (!seller || updatingId) return;
+    if ((status === 'banned' || status === 'rejected') && !window.confirm(`${status === 'banned' ? 'Ban' : 'Reject'} ${seller.business_name}? They will lose access to seller features.`)) return;
+    setStatusError('');
+    setUpdatingId(id);
+    try {
+      const { data, error } = await supabase.from('sellers').update({ status, updated_at: new Date().toISOString() }).eq('id', id).select('id,status').maybeSingle();
+      if (error || !data || data.status !== status) { setStatusError(error?.message || 'The status was not saved. Check store permissions and try again.'); return; }
+      setSellers(prev => prev.map(s => s.id === id ? { ...s, status: data.status as SellerStatus } : s));
+      setSelectedSeller(prev => prev?.id === id ? { ...prev, status: data.status as SellerStatus } : prev);
+    } catch { setStatusError('Could not connect to the store. Please try again.'); }
+    finally { setUpdatingId(null); }
+  }
 
   const filtered = filter === 'all' ? sellers : sellers.filter(s => s.status === filter);
   const colors: Record<string, string> = { pending: '#f59e0b', approved: '#22c55e', rejected: '#ef4444', banned: '#6b7280' };
@@ -64,6 +79,7 @@ function SellersTab() {
   return (
     <div>
       <h1 className="text-2xl font-black text-gray-900 mb-6">Seller Management</h1>
+      {statusError && <p role="alert" className="mb-4 border border-destructive/30 bg-destructive/10 text-destructive p-3 text-sm">{statusError}</p>}
       <div className="flex gap-2 mb-4 overflow-x-auto no-scrollbar">
         {['all', 'pending', 'approved', 'rejected', 'banned'].map(f => (
           <button key={f} onClick={() => setFilter(f)} className="px-4 py-2 rounded-xl text-sm font-medium whitespace-nowrap transition-colors capitalize" style={{ background: filter === f ? '#1a2340' : 'white', color: filter === f ? 'white' : '#4b5563', border: filter === f ? 'none' : '1px solid #e5e7eb' }}>{f}</button>
@@ -84,14 +100,14 @@ function SellersTab() {
                 <p className="text-sm text-gray-500">{s.full_name} • {s.email}</p>
                 <p className="text-xs text-gray-400 mt-1">{s.phone} • {s.shop_location}</p>
               </div>
-              <div className="flex gap-2 flex-wrap">
+              <div className="flex gap-2 flex-wrap" aria-busy={updatingId === s.id}>
                 <button onClick={() => setSelectedSeller(s)} className="px-3 py-1.5 rounded-lg text-xs font-bold border border-gray-200 hover:border-blue-400 transition-colors">View Details</button>
                 {s.status === 'pending' && (<>
-                  <button onClick={() => updateStatus(s.id, 'approved')} className="flex items-center gap-1 px-3 py-1.5 rounded-lg text-xs font-bold text-white" style={{ background: '#22c55e' }}><Check size={12} /> Approve</button>
-                  <button onClick={() => updateStatus(s.id, 'rejected')} className="flex items-center gap-1 px-3 py-1.5 rounded-lg text-xs font-bold text-white" style={{ background: '#ef4444' }}><X size={12} /> Reject</button>
+                   <button disabled={!!updatingId} onClick={() => updateStatus(s.id, 'approved')} className="flex items-center gap-1 px-3 py-1.5 rounded-lg text-xs font-bold text-white disabled:opacity-50" style={{ background: '#22c55e' }}><Check size={12} /> Approve</button>
+                   <button disabled={!!updatingId} onClick={() => updateStatus(s.id, 'rejected')} className="flex items-center gap-1 px-3 py-1.5 rounded-lg text-xs font-bold text-white disabled:opacity-50" style={{ background: '#ef4444' }}><X size={12} /> Reject</button>
                 </>)}
-                {s.status === 'approved' && <button onClick={() => updateStatus(s.id, 'banned')} className="flex items-center gap-1 px-3 py-1.5 rounded-lg text-xs font-bold border border-gray-200 text-gray-600 hover:border-red-400 hover:text-red-500 transition-colors"><Ban size={12} /> Ban</button>}
-                {(s.status === 'rejected' || s.status === 'banned') && <button onClick={() => updateStatus(s.id, 'approved')} className="flex items-center gap-1 px-3 py-1.5 rounded-lg text-xs font-bold text-white" style={{ background: '#22c55e' }}><Check size={12} /> Reinstate</button>}
+                 {s.status === 'approved' && <button disabled={!!updatingId} onClick={() => updateStatus(s.id, 'banned')} className="flex items-center gap-1 px-3 py-1.5 rounded-lg text-xs font-bold border border-gray-200 text-gray-600 hover:border-red-400 hover:text-red-500 transition-colors disabled:opacity-50"><Ban size={12} /> Ban</button>}
+                 {(s.status === 'rejected' || s.status === 'banned') && <button disabled={!!updatingId} onClick={() => updateStatus(s.id, 'approved')} className="flex items-center gap-1 px-3 py-1.5 rounded-lg text-xs font-bold text-white disabled:opacity-50" style={{ background: '#22c55e' }}><Check size={12} /> Reinstate</button>}
               </div>
             </div>
           </div>
@@ -110,10 +126,10 @@ function SellersTab() {
             {/* Status banner */}
             <div className="p-3 rounded-xl mb-5 flex items-center justify-between" style={{ background: colors[selectedSeller.status] + '15' }}>
               <span className="font-bold text-sm" style={{ color: colors[selectedSeller.status] }}>Status: {selectedSeller.status}</span>
-              <div className="flex gap-2">
-                {selectedSeller.status !== 'approved' && <button onClick={() => updateStatus(selectedSeller.id, 'approved')} className="px-3 py-1.5 rounded-lg text-xs font-bold text-white" style={{ background: '#22c55e' }}>Approve</button>}
-                {selectedSeller.status !== 'rejected' && <button onClick={() => updateStatus(selectedSeller.id, 'rejected')} className="px-3 py-1.5 rounded-lg text-xs font-bold text-white" style={{ background: '#ef4444' }}>Reject</button>}
-                {selectedSeller.status !== 'banned' && <button onClick={() => updateStatus(selectedSeller.id, 'banned')} className="px-3 py-1.5 rounded-lg text-xs font-bold text-white" style={{ background: '#6b7280' }}>Ban</button>}
+               <div className="flex gap-2 flex-wrap justify-end">
+                 {selectedSeller.status !== 'approved' && <button disabled={!!updatingId} onClick={() => updateStatus(selectedSeller.id, 'approved')} className="px-3 py-1.5 rounded-lg text-xs font-bold text-white disabled:opacity-50" style={{ background: '#22c55e' }}>Approve</button>}
+                 {selectedSeller.status !== 'rejected' && <button disabled={!!updatingId} onClick={() => updateStatus(selectedSeller.id, 'rejected')} className="px-3 py-1.5 rounded-lg text-xs font-bold text-white disabled:opacity-50" style={{ background: '#ef4444' }}>Reject</button>}
+                 {selectedSeller.status !== 'banned' && <button disabled={!!updatingId} onClick={() => updateStatus(selectedSeller.id, 'banned')} className="px-3 py-1.5 rounded-lg text-xs font-bold text-white disabled:opacity-50" style={{ background: '#6b7280' }}>Ban</button>}
               </div>
             </div>
 

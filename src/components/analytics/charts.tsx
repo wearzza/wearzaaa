@@ -58,20 +58,20 @@ export function AreaChart({ data, format = count, color = 'var(--chart-1)', comp
   const x = (i: number) => P + (i * (W - P * 2)) / Math.max(1, data.length - 1);
   const y = (v: number) => H - 24 - (v / max) * (H - 44);
   const line = data.map((d, i) => `${x(i)},${y(d.value)}`).join(' ');
-  const h = hover !== null ? data[hover] : null;
+   const h = hover !== null ? data[hover] : null;
   return <div className="relative">
     <svg viewBox={`0 0 ${W} ${H}`} preserveAspectRatio="none" className="w-full h-52 md:h-60" role="img" aria-label={data.map(d => `${d.label} ${format(d.value)}`).join(', ')} onMouseLeave={() => setHover(null)}>
       <defs><linearGradient id={id} x1="0" x2="0" y1="0" y2="1"><stop offset="0" stopColor={color} stopOpacity="0.32" /><stop offset="1" stopColor={color} stopOpacity="0" /></linearGradient></defs>
       {[0, 0.25, 0.5, 0.75, 1].map(t => <line key={t} x1={P} x2={W - P} y1={y(max * t)} y2={y(max * t)} stroke="var(--chart-track)" strokeDasharray="4 4" vectorEffect="non-scaling-stroke" />)}
       {compare && compare.length > 1 && <polyline points={compare.map((v, i) => `${x(i)},${y(v)}`).join(' ')} fill="none" stroke="var(--chart-slate)" strokeOpacity="0.5" strokeWidth="1.5" strokeDasharray="5 4" vectorEffect="non-scaling-stroke" />}
-      <polygon points={`${x(0)},${H - 24} ${line} ${x(data.length - 1)},${H - 24}`} fill={`url(#${id})`} />
+       {data.length > 0 && <polygon points={`${x(0)},${H - 24} ${line} ${x(data.length - 1)},${H - 24}`} fill={`url(#${id})`} />}
       <polyline points={line} fill="none" stroke={color} strokeWidth="2.5" strokeLinejoin="round" strokeLinecap="round" vectorEffect="non-scaling-stroke" />
       {hover !== null && <line x1={x(hover)} x2={x(hover)} y1={10} y2={H - 24} stroke={color} strokeOpacity="0.4" vectorEffect="non-scaling-stroke" />}
       {data.map((d, i) => <rect key={i} x={x(i) - (W / data.length) / 2} y={0} width={W / data.length} height={H} fill="transparent" onMouseEnter={() => setHover(i)} onTouchStart={() => setHover(i)} />)}
-      {hover !== null && <circle cx={x(hover)} cy={y(data[hover].value)} r="5" fill="hsl(var(--card))" stroke={color} strokeWidth="2.5" vectorEffect="non-scaling-stroke" />}
+       {h && hover !== null && <circle cx={x(hover)} cy={y(h.value)} r="5" fill="hsl(var(--card))" stroke={color} strokeWidth="2.5" vectorEffect="non-scaling-stroke" />}
     </svg>
-    {h && <div className="absolute top-1 pointer-events-none rounded-lg border border-border bg-card shadow-lg px-3 py-2 text-xs" style={{ left: `clamp(0px, calc(${(x(hover!) / W) * 100}% - 60px), calc(100% - 130px))` }}><div className="text-muted-foreground">{h.label}</div><div className="font-bold text-foreground">{format(h.value)}</div></div>}
-    <div className="flex justify-between text-[11px] text-muted-foreground -mt-4 px-1">{[0, Math.floor(data.length / 2), data.length - 1].map(i => <span key={i}>{data[i]?.label}</span>)}</div>
+     {h && hover !== null && <div className="absolute top-1 pointer-events-none rounded border border-border bg-card shadow-lg px-3 py-2 text-xs" style={{ left: `clamp(0px, calc(${(x(hover) / W) * 100}% - 60px), calc(100% - 130px))` }}><div className="text-muted-foreground">{h.label}</div><div className="font-bold text-foreground">{format(h.value)}</div></div>}
+     <div className="flex justify-between text-[11px] text-muted-foreground -mt-4 px-1">{[0, Math.floor(data.length / 2), data.length - 1].filter((i, position, arr) => i >= 0 && arr.indexOf(i) === position).map(i => <span key={i}>{data[i]?.label}</span>)}</div>
   </div>;
 }
 

@@ -23,6 +23,7 @@ export default function CategoryPage({ category, searchQuery, onProductClick }: 
       const { data } = await supabase
         .from('products').select('*, sellers!inner(*)')
         .eq('is_active', true)
+         .eq('sellers.status', 'approved')
         .order('created_at', { ascending: false });
       const cat = category as string;
       const matched = (data || []).filter(p => {
