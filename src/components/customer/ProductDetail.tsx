@@ -8,9 +8,10 @@ interface Props {
   product: Product;
   onBack: () => void;
   onCheckout: () => void;
+  onShopClick?: (s: import('../../lib/supabase').Seller) => void;
 }
 
-export default function ProductDetail({ product, onBack, onCheckout }: Props) {
+export default function ProductDetail({ product, onBack, onCheckout, onShopClick }: Props) {
   const { addToCart } = useCart();
   const [reviews, setReviews] = useState<Review[]>([]);
   const [activeImage, setActiveImage] = useState(0);
@@ -102,13 +103,14 @@ export default function ProductDetail({ product, onBack, onCheckout }: Props) {
             </div>
           )}
 
-          <div className="flex items-center gap-3 p-3 bg-gray-50 rounded-2xl mb-5">
+          <button type="button" onClick={() => product.sellers && onShopClick?.(product.sellers)} className="w-full text-left flex items-center gap-3 p-3 bg-gray-50 rounded-2xl mb-5 hover:bg-gray-100 transition-colors">
             <div className="w-10 h-10 rounded-xl bg-white flex items-center justify-center"><Shield size={18} style={{ color: '#22c55e' }} /></div>
-            <div>
+            <div className="flex-1">
               <p className="text-sm font-bold text-gray-800">{product.sellers?.business_name}</p>
               <p className="text-xs text-gray-400">{product.sellers?.shop_location} • Verified Store</p>
             </div>
-          </div>
+            <span className="text-xs font-bold text-primary">Visit shop →</span>
+          </button>
 
           <div className="flex items-center gap-4 mb-5">
             <span className="text-sm font-medium text-gray-700">Size:</span>
