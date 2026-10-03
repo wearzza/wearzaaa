@@ -7,6 +7,7 @@ interface Props {
   onProductClick: (p: Product) => void;
   onCategoryClick: (c: string) => void;
   searchQuery: string;
+  onShopClick?: (s: Seller) => void;
 }
 
 const CATEGORIES = [
@@ -18,7 +19,7 @@ const CATEGORIES = [
   { id: 'budget', label: 'Budget Deals', icon: '💰', color: '#22c55e' },
 ];
 
-export default function HomePage({ onProductClick, onCategoryClick, searchQuery }: Props) {
+export default function HomePage({ onProductClick, onCategoryClick, searchQuery, onShopClick }: Props) {
   const [products, setProducts] = useState<Product[]>([]);
   const [sellers, setSellers] = useState<Seller[]>([]);
   const [banner, setBanner] = useState<Banner | null>(null);
@@ -160,7 +161,7 @@ export default function HomePage({ onProductClick, onCategoryClick, searchQuery 
           <h2 className="text-lg font-bold text-gray-800 mb-4">Verified Stores</h2>
           <div className="flex gap-3 overflow-x-auto pb-2 -mx-4 px-4 no-scrollbar">
             {sellers.map(s => (
-              <div key={s.id} className="flex-shrink-0 w-40 bg-white rounded-2xl p-4 text-center" style={{ boxShadow: '0 2px 12px rgba(0,0,0,0.05)' }}>
+              <div key={s.id} role="button" tabIndex={0} onClick={() => onShopClick?.(s)} className="flex-shrink-0 w-40 bg-white rounded-2xl p-4 text-center cursor-pointer hover:-translate-y-1 transition-transform" style={{ boxShadow: '0 2px 12px rgba(0,0,0,0.05)' }}>
                 <div className="w-16 h-16 rounded-2xl mx-auto mb-3 overflow-hidden bg-gray-100 flex items-center justify-center">
                   {s.shop_logo_url ? <img src={s.shop_logo_url} alt={s.business_name} className="w-full h-full object-cover" /> : <span className="text-2xl font-bold text-gray-300">{s.business_name[0]}</span>}
                 </div>
