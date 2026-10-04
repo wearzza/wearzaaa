@@ -11,6 +11,32 @@ interface Props {
   onSuccess: () => void;
 }
 
+const SELLER_TC = [
+  'You must be at least 18 years old and legally allowed to run a business in Nepal.',
+  'All information and documents you submit (citizenship, PAN/VAT, shop registration) must be true and your own.',
+  'You may only sell genuine, legal clothing and fashion items. Fake, copied, stolen or banned goods are not allowed.',
+  'Product photos, prices, sizes and stock must be accurate. Do not use misleading discounts or other sellers\u2019 photos.',
+  'You are fully responsible for packing and delivering every order yourself, on time, in good condition.',
+  'Confirm or cancel new orders within 24 hours and update order status honestly (confirmed, shipped, delivered).',
+  'Cash on Delivery money collected from customers belongs to you; you must pay Wearza\u2019s agreed commission on delivered orders on time.',
+  'Be polite to customers. Abuse, spam, or asking customers to pay outside Wearza is not allowed.',
+  'Customer details (name, phone, address) may only be used to deliver their order and must never be shared or sold.',
+  'Wearza may hide products, reject, suspend or permanently ban your shop for breaking these rules, fake reviews, or repeated complaints.',
+  'Wearza can update these terms; continuing to sell after an update means you accept the new terms.',
+];
+
+const REFUND_POLICY = [
+  'Customers can request a return within 7 days of delivery.',
+  'Accepted reasons: wrong item, wrong size sent, damaged or defective item, or item very different from the photos/description.',
+  'Returned items must be unused, unwashed, with original tags and packaging.',
+  'Innerwear, socks, and items marked \u201cNo Return\u201d on the product page are not returnable unless damaged or wrong.',
+  'If the mistake is yours (wrong, damaged or fake item), you pay the return delivery cost and must give a replacement or full refund.',
+  'Size exchanges for customer change-of-mind may be offered; the customer can be asked to pay delivery charges.',
+  'Refunds must be paid to the customer within 5 working days after you receive the returned item.',
+  'You must reply to every return request within 48 hours. Ignored requests may be decided by Wearza in the customer\u2019s favour.',
+  'Repeated refund complaints or refusing valid returns can lead to suspension or ban of your shop.',
+];
+
 const BUSINESS_TERMS = [
   'All products must be genuine',
   'Seller handles delivery themselves',
@@ -476,7 +502,7 @@ export default function SellerAuth({ onBack, onSuccess }: Props) {
 
               <div className="flex gap-3">
                 <button onClick={() => setStep(3)} className="flex-1 py-3 rounded-xl font-bold text-sm border border-gray-200 text-gray-600">Back</button>
-                <button onClick={handleSignup} disabled={loading} className="flex-1 py-3.5 rounded-xl font-bold text-white text-sm disabled:opacity-50" style={{ background: 'linear-gradient(135deg, #ff3b30, #e8251a)' }}>{loading ? 'Creating...' : 'Submit Application'}</button>
+                <button onClick={handleSignup} disabled={loading || selfDelivery !== 'yes' || !policies.tc || !policies.refund || !form.terms_business_agreed || !form.terms_legal_agreed} className="flex-1 py-3.5 rounded-xl font-bold text-white text-sm disabled:opacity-50" style={{ background: 'linear-gradient(135deg, #ff3b30, #e8251a)' }}>{loading ? 'Creating...' : 'Submit Application'}</button>
               </div>
             </div>
           )}
