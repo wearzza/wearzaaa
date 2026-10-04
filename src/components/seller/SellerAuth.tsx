@@ -11,6 +11,32 @@ interface Props {
   onSuccess: () => void;
 }
 
+const SELLER_TC = [
+  'You must be at least 18 years old and legally allowed to run a business in Nepal.',
+  'All information and documents you submit (citizenship, PAN/VAT, shop registration) must be true and your own.',
+  'You may only sell genuine, legal clothing and fashion items. Fake, copied, stolen or banned goods are not allowed.',
+  'Product photos, prices, sizes and stock must be accurate. Do not use misleading discounts or other sellers\u2019 photos.',
+  'You are fully responsible for packing and delivering every order yourself, on time, in good condition.',
+  'Confirm or cancel new orders within 24 hours and update order status honestly (confirmed, shipped, delivered).',
+  'Cash on Delivery money collected from customers belongs to you; you must pay Wearza\u2019s agreed commission on delivered orders on time.',
+  'Be polite to customers. Abuse, spam, or asking customers to pay outside Wearza is not allowed.',
+  'Customer details (name, phone, address) may only be used to deliver their order and must never be shared or sold.',
+  'Wearza may hide products, reject, suspend or permanently ban your shop for breaking these rules, fake reviews, or repeated complaints.',
+  'Wearza can update these terms; continuing to sell after an update means you accept the new terms.',
+];
+
+const REFUND_POLICY = [
+  'Customers can request a return within 7 days of delivery.',
+  'Accepted reasons: wrong item, wrong size sent, damaged or defective item, or item very different from the photos/description.',
+  'Returned items must be unused, unwashed, with original tags and packaging.',
+  'Innerwear, socks, and items marked \u201cNo Return\u201d on the product page are not returnable unless damaged or wrong.',
+  'If the mistake is yours (wrong, damaged or fake item), you pay the return delivery cost and must give a replacement or full refund.',
+  'Size exchanges for customer change-of-mind may be offered; the customer can be asked to pay delivery charges.',
+  'Refunds must be paid to the customer within 5 working days after you receive the returned item.',
+  'You must reply to every return request within 48 hours. Ignored requests may be decided by Wearza in the customer\u2019s favour.',
+  'Repeated refund complaints or refusing valid returns can lead to suspension or ban of your shop.',
+];
+
 const BUSINESS_TERMS = [
   'All products must be genuine',
   'Seller handles delivery themselves',
@@ -45,6 +71,8 @@ export default function SellerAuth({ onBack, onSuccess }: Props) {
   const [loginForm, setLoginForm] = useState({ email: '', password: '' });
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
+  const [selfDelivery, setSelfDelivery] = useState<'' | 'yes' | 'no'>('');
+  const [policies, setPolicies] = useState({ tc: false, refund: false });
 
   async function handleLogin() {
     setError('');
@@ -62,6 +90,8 @@ export default function SellerAuth({ onBack, onSuccess }: Props) {
   async function handleSignup() {
     setError('');
     setLoading(true);
+    if (selfDelivery !== 'yes') { setError('Only sellers who deliver orders themselves can join Wearza.'); setLoading(false); return; }
+    if (!policies.tc || !policies.refund) { setError('Please tick the Terms & Conditions and the Refund & Return Policy.'); setLoading(false); return; }
     if (!form.terms_business_agreed || !form.terms_legal_agreed) { setError('You must agree to both agreements'); setLoading(false); return; }
     if (!form.face_image_url) { setError('Face verification is required'); setLoading(false); return; }
     if (!form.citizenship_front_url || !form.citizenship_back_url) { setError('Citizenship images are required'); setLoading(false); return; }
@@ -398,6 +428,44 @@ export default function SellerAuth({ onBack, onSuccess }: Props) {
             <div className="space-y-4">
               <h2 className="font-bold text-gray-800 flex items-center gap-2"><Shield size={18} /> Seller Agreement</h2>
 
+              {/* Self delivery requirement */}
+              <div className="rounded-2xl p-4 border-2 border-primary/30 bg-primary/5">
+                <h3 className="font-bold text-gray-800 text-sm mb-1">Do you deliver orders yourself?</h3>
+                <p className="text-xs text-gray-600 mb-3">Wearza sellers must pack and deliver every order themselves (own rider, courier you pay, or in person). Wearza does not provide delivery.</p>
+                <div className="grid grid-cols-2 gap-2">
+                  {(['yes', 'no'] as const).map(v => (
+                    <button key={v} type="button" onClick={() => setSelfDelivery(v)}
+                      className={`py-2.5 rounded-xl text-sm font-bold border-2 transition-colors ${selfDelivery === v ? (v === 'yes' ? 'border-chart-green bg-chart-green/10 text-gray-900' : 'border-destructive bg-destructive/10 text-destructive') : 'border-gray-200 bg-white text-gray-600'}`}>
+                      {v === 'yes' ? 'Yes, I deliver myself' : 'No'}
+                    </button>
+                  ))}
+                </div>
+                {selfDelivery === 'no' && <p role="alert" className="mt-3 text-xs font-medium text-destructive">Sorry, only sellers who handle their own delivery can sell on Wearza.</p>}
+              </div>
+
+              {[
+                { key: 'tc' as const, title: 'Terms & Conditions', items: SELLER_TC, label: 'I have read and agree to the Wearza Seller Terms & Conditions.' },
+                { key: 'refund' as const, title: 'Refund & Return Policy', items: REFUND_POLICY, label: 'I agree to follow the Wearza Refund & Return Policy for all my orders.' },
+              ].map(block => (
+                <div key={block.key} className="bg-gray-50 rounded-2xl p-4">
+                  <details className="group">
+                    <summary className="font-bold text-gray-800 text-sm cursor-pointer flex items-center justify-between gap-2 list-none">
+                      <span className="flex items-center gap-2"><Shield size={14} /> {block.title}</span>
+                      <span className="text-xs font-semibold text-primary group-open:hidden">Read</span>
+                      <span className="text-xs font-semibold text-primary hidden group-open:inline">Hide</span>
+                    </summary>
+                    <ol className="mt-3 space-y-1.5 max-h-56 overflow-y-auto pr-1">
+                      {block.items.map((t, i) => <li key={i} className="flex items-start gap-2 text-xs text-gray-700"><span className="font-bold text-primary">{i + 1}.</span><span>{t}</span></li>)}
+                    </ol>
+                  </details>
+                  <label className="flex items-start gap-2 cursor-pointer p-2 mt-2 rounded-lg hover:bg-white transition-colors">
+                    <input type="checkbox" checked={policies[block.key]} onChange={e => setPolicies(p => ({ ...p, [block.key]: e.target.checked }))} className="mt-0.5 w-4 h-4 accent-red-500" />
+                    <span className="text-xs text-gray-700">{block.label}</span>
+                  </label>
+                </div>
+              ))}
+
+
               {/* Business Agreement */}
               <div className="bg-gray-50 rounded-2xl p-4">
                 <h3 className="font-bold text-gray-800 text-sm mb-2 flex items-center gap-2"><Store size={14} /> Business Agreement</h3>
@@ -434,7 +502,7 @@ export default function SellerAuth({ onBack, onSuccess }: Props) {
 
               <div className="flex gap-3">
                 <button onClick={() => setStep(3)} className="flex-1 py-3 rounded-xl font-bold text-sm border border-gray-200 text-gray-600">Back</button>
-                <button onClick={handleSignup} disabled={loading} className="flex-1 py-3.5 rounded-xl font-bold text-white text-sm disabled:opacity-50" style={{ background: 'linear-gradient(135deg, #ff3b30, #e8251a)' }}>{loading ? 'Creating...' : 'Submit Application'}</button>
+                <button onClick={handleSignup} disabled={loading || selfDelivery !== 'yes' || !policies.tc || !policies.refund || !form.terms_business_agreed || !form.terms_legal_agreed} className="flex-1 py-3.5 rounded-xl font-bold text-white text-sm disabled:opacity-50" style={{ background: 'linear-gradient(135deg, #ff3b30, #e8251a)' }}>{loading ? 'Creating...' : 'Submit Application'}</button>
               </div>
             </div>
           )}
