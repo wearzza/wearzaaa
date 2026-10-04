@@ -76,11 +76,11 @@ export default function HomePage({ onProductClick, onCategoryClick, searchQuery,
       {/* Hero - Dynamic Banner */}
       <div className="max-w-7xl mx-auto px-4 pt-4">
         <div
-          className="relative rounded-3xl overflow-hidden h-56 sm:h-72 md:h-80 flex items-center"
+          className="relative rounded-3xl overflow-hidden min-h-[15rem] sm:min-h-[18rem] md:min-h-[20rem] flex items-center"
           style={banner?.image_url ? { backgroundImage: `url(${banner.image_url})`, backgroundSize: 'cover', backgroundPosition: 'center', boxShadow: '0 20px 60px rgba(26,35,64,0.3)' } : { background: 'linear-gradient(135deg, #1a2340 0%, #2a3360 50%, #ff3b30 120%)', boxShadow: '0 20px 60px rgba(26,35,64,0.3)' }}
         >
           <div className="absolute inset-0" style={{ background: banner?.image_url ? 'linear-gradient(90deg, rgba(26,35,64,0.85) 0%, rgba(26,35,64,0.5) 60%, transparent 100%)' : 'radial-gradient(circle at 30% 50%, rgba(255,255,255,0.3) 0%, transparent 50%)', opacity: banner?.image_url ? 1 : 0.2 }} />
-          <div className="relative z-10 p-8 sm:p-12 max-w-lg">
+          <div className="relative z-10 p-6 sm:p-12 max-w-lg">
             <span className="inline-block bg-white/20 backdrop-blur-sm text-white text-xs font-bold px-3 py-1.5 rounded-full mb-4">NEW COLLECTION 2026</span>
             <h1 className="text-3xl sm:text-4xl md:text-5xl font-black text-white leading-tight mb-3">{banner?.title || 'Fashion that fits your style'}</h1>
             <p className="text-white/80 text-sm sm:text-base mb-6">{banner?.subtitle || 'Shop from verified fashion stores across Nepal. COD available.'}</p>
