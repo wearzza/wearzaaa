@@ -1,3 +1,4 @@
+import DatabaseSetupNotice from './DatabaseSetupNotice';
 import { useEffect, useState } from 'react';
 import { supabase, Seller, SellerStatus, Order, PromoCode, Banner } from '../../lib/supabase';
 import AnalyticsOverview from './AnalyticsOverview';
