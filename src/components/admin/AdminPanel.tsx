@@ -54,22 +54,30 @@ function SellersTab() {
   const [selectedSeller, setSelectedSeller] = useState<Seller | null>(null);
   const [statusError, setStatusError] = useState('');
   const [updatingId, setUpdatingId] = useState<string | null>(null);
+  const [needsSetup, setNeedsSetup] = useState(false);
+  const [notice, setNotice] = useState('');
+  const [lastAttempt, setLastAttempt] = useState<{ id: string; status: SellerStatus } | null>(null);
 
   async function load() { const { data, error } = await supabase.from('sellers').select('*').order('created_at', { ascending: false }); if (error) setStatusError('Could not load sellers. Please try again.'); else setSellers(data || []); }
   useEffect(() => { load(); }, []);
 
-  async function updateStatus(id: string, status: SellerStatus) {
+  async function updateStatus(id: string, status: SellerStatus, skipConfirm = false) {
     const seller = sellers.find(s => s.id === id);
     if (!seller || updatingId) return;
-    if ((status === 'banned' || status === 'rejected') && !window.confirm(`${status === 'banned' ? 'Ban' : 'Reject'} ${seller.business_name}? They will lose access to seller features.`)) return;
-    setStatusError('');
+    if (!skipConfirm && (status === 'banned' || status === 'rejected') && !window.confirm(`${status === 'banned' ? 'Ban' : 'Reject'} ${seller.business_name}? They will lose access to seller features.`)) return;
+    setStatusError(''); setNeedsSetup(false);
     setUpdatingId(id);
+    setLastAttempt({ id, status });
     try {
       const { data, error } = await supabase.from('sellers').update({ status, updated_at: new Date().toISOString() }).eq('id', id).select('id,status').maybeSingle();
-      if (error || !data || data.status !== status) { setStatusError(error?.message || 'The status was not saved. Check store permissions and try again.'); return; }
+      if (!error && (!data || data.status !== status)) { setNeedsSetup(true); return; }
+      if (error) { setStatusError(error.message); return; }
+      setLastAttempt(null);
       setSellers(prev => prev.map(s => s.id === id ? { ...s, status: data.status as SellerStatus } : s));
       setSelectedSeller(prev => prev?.id === id ? { ...prev, status: data.status as SellerStatus } : prev);
-    } catch { setStatusError('Could not connect to the store. Please try again.'); }
+      setNotice(`${seller.business_name} is now ${data.status}.`);
+      setTimeout(() => setNotice(''), 3000);
+    } catch { setStatusError('Could not connect to the store. Check your internet and try again.'); }
     finally { setUpdatingId(null); }
   }
 
@@ -79,7 +87,9 @@ function SellersTab() {
   return (
     <div>
       <h1 className="text-2xl font-black text-gray-900 mb-6">Seller Management</h1>
-      {statusError && <p role="alert" className="mb-4 border border-destructive/30 bg-destructive/10 text-destructive p-3 text-sm">{statusError}</p>}
+      {needsSetup && <DatabaseSetupNotice onRetry={() => lastAttempt && updateStatus(lastAttempt.id, lastAttempt.status, true)} />}
+      {notice && <p role="status" className="mb-4 rounded-xl border border-chart-green/30 bg-chart-green/10 text-foreground p-3 text-sm">{notice}</p>}
+      {statusError && <p role="alert" className="mb-4 rounded-xl border border-destructive/30 bg-destructive/10 text-destructive p-3 text-sm">{statusError}</p>}
       <div className="flex gap-2 mb-4 overflow-x-auto no-scrollbar">
         {['all', 'pending', 'approved', 'rejected', 'banned'].map(f => (
           <button key={f} onClick={() => setFilter(f)} className="px-4 py-2 rounded-xl text-sm font-medium whitespace-nowrap transition-colors capitalize" style={{ background: filter === f ? '#1a2340' : 'white', color: filter === f ? 'white' : '#4b5563', border: filter === f ? 'none' : '1px solid #e5e7eb' }}>{f}</button>
