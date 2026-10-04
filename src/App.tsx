@@ -10,8 +10,15 @@ import AdminPanel from './components/admin/AdminPanel';
 
 type View = 'splash' | 'customer' | 'seller-auth' | 'seller-dashboard' | 'admin-login' | 'admin-panel';
 
+function readShopHandle() {
+  const m = window.location.pathname.match(/^\/s\/([^/?#]+)/);
+  if (m) return decodeURIComponent(m[1]);
+  return new URLSearchParams(window.location.search).get('shop') || undefined;
+}
+
 function AppInner() {
-  const [view, setView] = useState<View>('splash');
+  const [initialShop] = useState(readShopHandle);
+  const [view, setView] = useState<View>(initialShop ? 'customer' : 'splash');
   const { seller } = useSeller();
 
   return (
@@ -20,6 +27,7 @@ function AppInner() {
 
       {view === 'customer' && (
         <CustomerPanel
+          initialShop={initialShop}
           onSellerLogin={() => setView(seller ? 'seller-dashboard' : 'seller-auth')}
           onAdminLogin={() => setView('admin-login')}
         />

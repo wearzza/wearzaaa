@@ -3,19 +3,61 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title data-default>Wearza</title>
+    <meta http-equiv="Cache-Control" content="no-cache" />
+    <title data-default>Wearza – Verified Fashion Stores in Nepal</title>
     <meta property="og:image" content="https://storage.googleapis.com/gpt-engineer-file-uploads/e9O7JV70fmTSSx6yrKYkoJnafsF3/social-images/social-1784652936423-f5843efc-6c3d-47ff-b16f-26605943a43c.webp">
     <meta name="twitter:card" content="summary_large_image" />
     <meta name="twitter:image" content="https://storage.googleapis.com/gpt-engineer-file-uploads/e9O7JV70fmTSSx6yrKYkoJnafsF3/social-images/social-1784652936423-f5843efc-6c3d-47ff-b16f-26605943a43c.webp">
-    <meta property="og:title" content="Wearza">
-  <meta name="twitter:title" content="Wearza">
-  <meta name="description" content="Online Shopping Platform">
-  <meta property="og:description" content="Online Shopping Platform">
-  <meta name="twitter:description" content="Online Shopping Platform">
-  <meta property="og:type" content="website">
-</head>
+    <meta property="og:title" content="Wearza – Verified Fashion Stores in Nepal">
+    <meta name="twitter:title" content="Wearza – Verified Fashion Stores in Nepal">
+    <meta name="description" content="Shop clothes from verified fashion stores across Nepal with Cash on Delivery.">
+    <meta property="og:description" content="Shop clothes from verified fashion stores across Nepal with Cash on Delivery.">
+    <meta name="twitter:description" content="Shop clothes from verified fashion stores across Nepal with Cash on Delivery.">
+    <meta property="og:type" content="website">
+    <style>
+      #boot{position:fixed;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;background:#fff;font-family:system-ui,sans-serif;color:#1a2340;text-align:center;padding:24px}
+      #boot img{width:96px;height:96px;object-fit:contain;margin-bottom:16px}
+      #boot b{font-size:32px;font-weight:900;letter-spacing:1px}
+      #boot .bar{width:96px;height:2px;background:#e5e7eb;margin-top:28px;overflow:hidden}
+      #boot .bar i{display:block;height:100%;width:40%;background:#ff3b30;animation:boot 1s ease-in-out infinite}
+      #boot button{margin-top:20px;padding:12px 20px;border:0;border-radius:12px;background:#1a2340;color:#fff;font-weight:700;font-size:14px;display:none}
+      #boot p{font-size:13px;color:#6b7280;margin-top:12px;display:none}
+      @keyframes boot{from{transform:translateX(-100%)}to{transform:translateX(250%)}}
+    </style>
+  </head>
   <body>
-    <div id="root"></div>
+    <div id="root">
+      <div id="boot">
+        <img src="/assets/images/wearza-splash-mark.png" alt="" />
+        <b>WEARZA</b>
+        <div class="bar"><i></i></div>
+        <p id="boot-msg">Wearza is taking longer than usual to load.</p>
+        <button id="boot-btn" onclick="location.reload()">Reload Wearza</button>
+      </div>
+    </div>
+    <script>
+      // Safety net: never leave visitors on a blank page.
+      (function () {
+        var KEY = 'wearza_boot_reload';
+        function showRetry() {
+          var m = document.getElementById('boot-msg'), b = document.getElementById('boot-btn');
+          if (m) m.style.display = 'block';
+          if (b) b.style.display = 'inline-block';
+        }
+        function recover() {
+          // A stale cached page can point to old files; reload once to fetch fresh ones.
+          if (!sessionStorage.getItem(KEY)) { sessionStorage.setItem(KEY, '1'); location.reload(); }
+          else showRetry();
+        }
+        window.addEventListener('error', function (e) {
+          var t = e.target;
+          if (t && (t.tagName === 'SCRIPT' || t.tagName === 'LINK')) recover();
+        }, true);
+        window.addEventListener('vite:preloadError', function (e) { e.preventDefault(); recover(); });
+        setTimeout(function () { if (document.getElementById('boot')) showRetry(); }, 10000);
+        window.__wearzaBooted = function () { sessionStorage.removeItem(KEY); };
+      })();
+    </script>
     <script type="module" src="/src/main.tsx"></script>
   </body>
 </html>
