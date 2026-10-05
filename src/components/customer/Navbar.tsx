@@ -56,7 +56,7 @@ export default function Navbar({ onCartOpen, onSearch, searchQuery, onPageChange
       <form onSubmit={e => { e.preventDefault(); submit(draft); }} className="flex items-center rounded-full border-2 border-primary/80 bg-card overflow-hidden focus-within:border-primary transition-colors">
         <Search className="ml-4 text-muted-foreground flex-shrink-0" size={17} />
         <input
-          type="search" placeholder="Search t-shirts, jeans, kurtas, shops…" value={draft}
+          type="text" inputMode="search" enterKeyHint="search" aria-label="Search products" placeholder="Search t-shirts, jeans, kurtas, shops…" value={draft}
           onFocus={() => setFocused(true)}
           onChange={e => { setDraft(e.target.value); if (!e.target.value) onSearch(''); }}
           className="flex-1 min-w-0 px-3 py-2.5 text-sm bg-transparent focus:outline-none text-foreground"
