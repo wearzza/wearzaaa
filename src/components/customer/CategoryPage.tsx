@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { supabase, Product } from '../../lib/supabase';
 import ProductCard from './ProductCard';
+import { useCategories, searchProducts } from '../../lib/catalog';
 import { SlidersHorizontal, X } from 'lucide-react';
 
 interface Props {
@@ -14,6 +15,7 @@ const CAT_LABEL: Record<string, string> = { men: 'Men', women: 'Women', kids: 'K
 export default function CategoryPage({ category, searchQuery, onProductClick }: Props) {
   const [products, setProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState(true);
+  const cats = useCategories();
   const [showFilters, setShowFilters] = useState(false);
   const [filters, setFilters] = useState({ minPrice: '', maxPrice: '', minRating: 0, sortBy: 'newest' });
 
@@ -37,7 +39,7 @@ export default function CategoryPage({ category, searchQuery, onProductClick }: 
   }, [category]);
 
   let filtered = products;
-  if (searchQuery) filtered = filtered.filter(p => p.name.toLowerCase().includes(searchQuery.toLowerCase()) || p.sellers?.business_name.toLowerCase().includes(searchQuery.toLowerCase()));
+  if (searchQuery) filtered = searchProducts(filtered, searchQuery, cats);
   if (filters.minPrice) filtered = filtered.filter(p => p.real_price >= +filters.minPrice);
   if (filters.maxPrice) filtered = filtered.filter(p => p.real_price <= +filters.maxPrice);
   if (filters.minRating) filtered = filtered.filter(p => p.avg_rating >= filters.minRating);
@@ -48,7 +50,7 @@ export default function CategoryPage({ category, searchQuery, onProductClick }: 
   return (
     <div className="max-w-7xl mx-auto px-4 py-4">
       <div className="flex items-center justify-between mb-4">
-        <h1 className="text-2xl font-black text-gray-900">{CAT_LABEL[category] || category}</h1>
+        <h1 className="text-2xl font-black text-gray-900">{cats.find(c => c.slug === category)?.label || CAT_LABEL[category] || category.replace(/_/g, ' ')}</h1>
         <button onClick={() => setShowFilters(s => !s)} className="flex items-center gap-1.5 px-4 py-2 rounded-xl text-sm font-medium border border-gray-200 hover:border-red-400 transition-colors">
           <SlidersHorizontal size={14} /> Filters
         </button>

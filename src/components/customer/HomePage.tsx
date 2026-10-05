@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { supabase, Product, Seller, Banner } from '../../lib/supabase';
 import ProductCard from './ProductCard';
+import { useCategories, searchProducts } from '../../lib/catalog';
 import { Shield, TrendingUp, Tag, Truck, ChevronRight } from 'lucide-react';
 
 interface Props {
@@ -24,12 +25,13 @@ export default function HomePage({ onProductClick, onCategoryClick, searchQuery,
   const [sellers, setSellers] = useState<Seller[]>([]);
   const [banner, setBanner] = useState<Banner | null>(null);
   const [loading, setLoading] = useState(true);
+  const cats = useCategories();
 
   useEffect(() => {
     async function load() {
       setLoading(true);
       const [p, s, b] = await Promise.all([
-        supabase.from('products').select('*, sellers!inner(*)').eq('is_active', true).eq('sellers.status', 'approved').order('created_at', { ascending: false }).limit(24),
+        supabase.from('products').select('*, sellers!inner(*)').eq('is_active', true).eq('sellers.status', 'approved').order('created_at', { ascending: false }).limit(searchQuery ? 300 : 60),
         supabase.from('sellers').select('*').eq('status', 'approved').limit(12),
         supabase.from('banners').select('*').eq('is_active', true).order('sort_order', { ascending: true }).limit(1).maybeSingle(),
       ]);
@@ -39,15 +41,9 @@ export default function HomePage({ onProductClick, onCategoryClick, searchQuery,
       setLoading(false);
     }
     load();
-  }, []);
+  }, [!!searchQuery]);
 
-  const filtered = searchQuery
-    ? products.filter(p =>
-        p.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        p.description?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        p.sellers?.business_name.toLowerCase().includes(searchQuery.toLowerCase())
-      )
-    : products;
+  const filtered = searchQuery ? searchProducts(products, searchQuery, cats) : products;
 
   if (searchQuery) {
     return (

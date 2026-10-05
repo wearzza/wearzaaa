@@ -110,10 +110,26 @@ function ProductsTab({ seller }: { seller: Seller }) {
   const [videoData, setVideoData] = useState<string>('');
   const [videoName, setVideoName] = useState<string>('');
 
+  const storeCats = useCategories();
+  const [newCat, setNewCat] = useState('');
+  const [catMsg, setCatMsg] = useState('');
   const ALL_CATS: { id: ProductCategory; label: string }[] = [
-    { id: 'men', label: 'Men' }, { id: 'women', label: 'Women' }, { id: 'kids', label: 'Kids' },
-    { id: 'streetwear', label: 'Streetwear' }, { id: 'old_money', label: 'Old Money' }, { id: 'budget', label: 'Budget Deals' },
+    ...storeCats.map(c => ({ id: c.slug as ProductCategory, label: c.label })),
+    ...form.categories.filter(c => !storeCats.some(s => s.slug === c)).map(c => ({ id: c, label: String(c).replace(/_/g, ' ') })),
   ];
+
+  async function addOwnCategory() {
+    const label = newCat.trim().slice(0, 40);
+    if (!label) return;
+    const slug = slugify(label) as ProductCategory;
+    if (!slug) return;
+    setNewCat('');
+    if (!form.categories.includes(slug)) setForm(prev => ({ ...prev, categories: [...prev.categories, slug] }));
+    if (storeCats.some(c => c.slug === slug)) { setCatMsg(`"${label}" already exists and is selected.`); return; }
+    const { data } = await supabase.from('categories').insert({ slug, label, icon: '🏷️', sort_order: storeCats.length + 1, is_active: true, created_by_seller: seller.id }).select().maybeSingle();
+    if (data) { refreshCategories(); setCatMsg(`"${label}" added to Wearza categories.`); }
+    else setCatMsg(`"${label}" is selected for this product. It will show in the store menu once Wearza enables seller categories.`);
+  }
 
   async function load() {
     setLoading(true);
@@ -229,6 +245,11 @@ function ProductsTab({ seller }: { seller: Seller }) {
                     </button>
                   ))}
                 </div>
+                <div className="flex gap-2 mt-2">
+                  <input value={newCat} onChange={e => setNewCat(e.target.value)} onKeyDown={e => { if (e.key === 'Enter') { e.preventDefault(); addOwnCategory(); } }} maxLength={40} placeholder="Not listed? Add your own category" className="flex-1 min-w-0 px-3 py-2 rounded-xl border border-gray-200 text-sm focus:outline-none focus:border-red-400" />
+                  <button type="button" onClick={addOwnCategory} disabled={!newCat.trim()} className="px-3 py-2 rounded-xl text-xs font-bold bg-gray-900 text-white disabled:opacity-40 flex items-center gap-1"><Plus size={12} />Add</button>
+                </div>
+                {catMsg && <p className="text-xs text-gray-500 mt-1.5">{catMsg}</p>}
               </div>
               <div className="grid grid-cols-2 gap-3">
                 <div><label className="text-sm font-medium text-gray-700 mb-1 block">Real Price (Rs.) *</label><input type="number" value={form.real_price} onChange={e => setForm({ ...form, real_price: e.target.value })} className="w-full px-4 py-2.5 rounded-xl border border-gray-200 text-sm focus:outline-none focus:border-red-400" /></div>
