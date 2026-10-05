@@ -18,8 +18,8 @@ export default function DatabaseSetupNotice({ onRetry }: { onRetry: () => void }
       <div className="flex items-start gap-3">
         <div className="w-10 h-10 rounded-xl bg-destructive/10 text-destructive flex items-center justify-center flex-shrink-0"><Database size={18} /></div>
         <div className="min-w-0 flex-1">
-          <h2 className="font-bold text-foreground">Your store database is blocking Ban / Reject</h2>
-          <p className="text-sm text-muted-foreground mt-1">Your database's security rules don't allow seller status changes yet. Allow it once, in about 1 minute:</p>
+          <h2 className="font-bold text-foreground">Your store database is blocking changes</h2>
+          <p className="text-sm text-muted-foreground mt-1">Your database's security rules block saving changes (ban/reject, categories, banners, products). Allow it once, in about 1 minute:</p>
           <ol className="text-sm text-foreground mt-3 space-y-1.5 list-decimal pl-5">
             <li>Tap <b>Copy setup code</b>.</li>
             <li>Tap <b>Open SQL editor</b> and log in to the database account that holds your store.</li>
