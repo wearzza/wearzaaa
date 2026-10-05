@@ -5,6 +5,8 @@ import { hashPassword } from '../../lib/auth';
 import { Store, Package, ShoppingBag, Tag, Star, Settings, LogOut, Plus, Edit, Trash2, Upload, X, Clock, Bell } from 'lucide-react';
 import PasswordField from '../PasswordField';
 import SellerAnalytics from './SellerAnalytics';
+import ShopLinkCard from './ShopLinkCard';
+import { useCategories, refreshCategories, slugify } from '../../lib/catalog';
 
 type Tab = 'overview' | 'products' | 'orders' | 'promos' | 'reviews' | 'notifications' | 'branding' | 'settings';
 
@@ -85,7 +87,7 @@ export default function SellerDashboard() {
       </aside>
 
       <main className="flex-1 min-w-0 p-4 md:p-8 overflow-x-hidden">
-         {tab === 'overview' && <SellerAnalytics seller={seller} onNavigate={setTab} />}
+         {tab === 'overview' && <><ShopLinkCard seller={seller} /><SellerAnalytics seller={seller} onNavigate={setTab} /></>}
         {tab === 'products' && <ProductsTab seller={seller} />}
         {tab === 'orders' && <OrdersTab seller={seller} />}
         {tab === 'promos' && <PromosTab seller={seller} />}
