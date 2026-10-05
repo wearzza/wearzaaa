@@ -64,6 +64,12 @@ function SellersTab() {
 
   async function load() { const { data, error } = await supabase.from('sellers').select('*').order('created_at', { ascending: false }); if (error) setStatusError('Could not load sellers. Please try again.'); else setSellers(data || []); }
   useEffect(() => { load(); }, []);
+  // Detect up front whether the database lets the admin save changes (writes the same value back).
+  useEffect(() => {
+    const first = sellers[0];
+    if (!first) return;
+    supabase.from('sellers').update({ updated_at: first.updated_at }).eq('id', first.id).select('id').then(({ data, error }) => { if (!error && !data?.length) setNeedsSetup(true); });
+  }, [sellers.length > 0]);
 
   async function updateStatus(id: string, status: SellerStatus, skipConfirm = false) {
     const seller = sellers.find(s => s.id === id);
