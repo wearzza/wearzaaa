@@ -92,8 +92,8 @@ export default function HomePage({ onProductClick, onCategoryClick, searchQuery,
       {/* Categories */}
       <div className="max-w-7xl mx-auto px-4 mt-6">
         <h2 className="text-lg font-bold text-gray-800 mb-4">Shop by Category</h2>
-        <div className="grid grid-cols-3 sm:grid-cols-6 gap-3 sm:gap-4">
-          {CATEGORIES.map(cat => (
+        <div className="grid grid-cols-3 sm:grid-cols-4 lg:grid-cols-6 gap-3 sm:gap-4">
+          {cats.map((c, i) => ({ id: c.slug, label: c.label, icon: c.icon || '🏷️', color: CATEGORIES.find(x => x.id === c.slug)?.color || c.color || ['#3b82f6', '#ec4899', '#f59e0b', '#8b5cf6', '#22c55e'][i % 5] })).map(cat => (
             <button
               key={cat.id}
               onClick={() => onCategoryClick(cat.id)}
