@@ -1,3 +1,3 @@
-// Public browser configuration for the Wearza storefront.
-export const PUBLIC_SUPABASE_URL = 'https://yoaqfqbwwgrtvghgdjqi.supabase.co';
-export const PUBLIC_SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InlvYXFmcWJ3d2dydHZnaGdkanFpIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODQzODYxMTEsImV4cCI6MjA5OTk2MjExMX0.Kjz1Eew0Zc7-xIT8j9r84ZyYVhRmn9TqnA903Jq8nJ8';
+// Public browser configuration for the Wearza storefront (Lovable Cloud).
+export const PUBLIC_SUPABASE_URL = 'https://uksxdfaowmumhsfslsch.supabase.co';
+export const PUBLIC_SUPABASE_ANON_KEY = 'sb_publishable_wn6GsJGzua9nG4VXRyJE1Q__6tMetAJ';
