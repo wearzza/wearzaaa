@@ -14,3 +14,4 @@
 - Keep reporting calculations and SVG/CSS chart UI in `AnalyticsOverview` so the admin panel stays focused on navigation and management views.
 - Define analytics colors as semantic global CSS tokens and expose them through Tailwind so charts and controls stay visually consistent.
 - Use the cropped transparent Wearza mark for the white splash screen so the image does not show a white square or nested red tile.
+- Store data lives in Lovable Cloud; the app client must use env URL and publishable key only as a matching pair, falling back to publicConfig, so it never mixes keys from two backends.

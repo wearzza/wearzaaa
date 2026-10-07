@@ -1,9 +1,12 @@
 import { createClient } from '@supabase/supabase-js';
 import { PUBLIC_SUPABASE_ANON_KEY, PUBLIC_SUPABASE_URL } from './publicConfig';
 
+const envUrl = import.meta.env.VITE_SUPABASE_URL;
+const envKey = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY;
+// Use env values only as a matching pair so the URL and key always belong to the same backend.
 export const supabase = createClient(
-  import.meta.env.VITE_SUPABASE_URL || PUBLIC_SUPABASE_URL,
-  import.meta.env.VITE_SUPABASE_ANON_KEY || PUBLIC_SUPABASE_ANON_KEY
+  envUrl && envKey ? envUrl : PUBLIC_SUPABASE_URL,
+  envUrl && envKey ? envKey : PUBLIC_SUPABASE_ANON_KEY
 );
 
 export type SellerStatus = 'pending' | 'approved' | 'rejected' | 'banned';
