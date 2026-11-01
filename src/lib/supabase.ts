@@ -10,7 +10,7 @@ export const supabase = createClient(
 );
 
 export type SellerStatus = 'pending' | 'approved' | 'rejected' | 'banned';
-export type OrderStatus = 'pending' | 'confirmed' | 'shipped' | 'delivered' | 'cancelled';
+export type OrderStatus = 'pending' | 'processing' | 'confirmed' | 'shipped' | 'delivered' | 'cancelled';
 export type ProductCategory = 'men' | 'women' | 'streetwear' | 'budget' | 'kids' | 'old_money';
 
 export interface Banner {
@@ -55,6 +55,11 @@ export interface Seller {
   terms_business_agreed: boolean;
   terms_legal_agreed: boolean;
   commission_rate: number;
+  shop_slug?: string;
+  self_delivery?: boolean;
+  refund_policy_agreed?: boolean;
+  policy_version?: string;
+  policies_accepted_at?: string;
   shop_banner_url?: string;
   created_at: string;
   updated_at: string;
@@ -102,6 +107,12 @@ export interface Order {
   status: OrderStatus;
   notes?: string;
   commission_paid: boolean;
+  cancellation_reason?: string;
+  cancellation_details?: string;
+  cancelled_by?: 'customer' | 'seller';
+  cancelled_at?: string;
+  confirmed_at?: string;
+  delivered_at?: string;
   created_at: string;
   updated_at: string;
   sellers?: Seller;

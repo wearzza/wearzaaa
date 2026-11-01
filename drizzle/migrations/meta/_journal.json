@@ -15,6 +15,13 @@
       "when": 1793497335232,
       "tag": "0001_wearza_order_rules_and_commission",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1793497393193,
+      "tag": "0002_guest_order_tracking_and_cancellation",
+      "breakpoints": true
     }
   ]
 }

@@ -612,9 +612,22 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      wearza_cancel_customer_order: {
+        Args: {
+          _details?: string
+          _order_id: string
+          _reason: string
+          _token: string
+        }
+        Returns: Json
+      }
       wearza_make_slug: {
         Args: { _id: string; _name: string }
         Returns: string
+      }
+      wearza_tracked_order: {
+        Args: { _order_id: string; _token: string }
+        Returns: Json
       }
     }
     Enums: {
