@@ -3,6 +3,7 @@ import { useCart } from '../../contexts/CartContext';
 import { supabase } from '../../lib/supabase';
 import { PROVINCES, getDistricts, getMunicipalities } from '../../lib/nepalLocations';
 import { ArrowLeft, Check, Tag, MapPin, Phone, User, Truck, Navigation } from 'lucide-react';
+import { saveTrackedOrder } from '../../lib/orderTracking';
 
 interface Props {
   onBack: () => void;
@@ -20,6 +21,7 @@ export default function Checkout({ onBack, onSuccess }: Props) {
   const [promoApplied, setPromoApplied] = useState(false);
   const [promoError, setPromoError] = useState('');
   const [submitting, setSubmitting] = useState(false);
+  const [orderError, setOrderError] = useState('');
 
   const grandTotal = Math.max(0, totalPrice - promoDiscount);
   const districts = getDistricts(form.province);
@@ -50,6 +52,9 @@ export default function Checkout({ onBack, onSuccess }: Props) {
     if (!form.name.trim() || !form.phone.trim() || !form.address.trim() || items.length === 0) return;
     if (!form.province || !form.district || !form.municipality || !form.ward_number) return;
     setSubmitting(true);
+    setOrderError('');
+
+    try {
 
     const locationStr = `${form.municipality}-${form.ward_number}, ${form.district}, ${form.province}`;
 
@@ -67,28 +72,38 @@ export default function Checkout({ onBack, onSuccess }: Props) {
       const sellerPromo = promoApplied ? Math.round((subtotal / totalPrice) * promoDiscount) : 0;
       const total = Math.max(0, subtotal - sellerPromo);
 
-      const { data: order } = await supabase.from('orders').insert({
+      const token = crypto.randomUUID() + crypto.randomUUID();
+      const hash = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(token));
+      const tokenHash = Array.from(new Uint8Array(hash)).map(b => b.toString(16).padStart(2, '0')).join('');
+      const { data: order, error: insertError } = await supabase.from('orders').insert({
         customer_name: form.name, customer_phone: form.phone, customer_address: form.address, customer_location: locationStr,
         province: form.province, district: form.district, municipality: form.municipality,
         ward_number: form.ward_number ? +form.ward_number : null, map_url: form.map_url || null,
         seller_id: sellerId, promo_code: promoApplied ? form.promoCode.toUpperCase() : null, promo_discount: sellerPromo,
-        subtotal, total, payment_method: 'cod', notes: form.notes || null, status: 'pending',
+        subtotal, total, payment_method: 'cod', notes: form.notes || null, status: 'pending', management_token_hash: tokenHash,
       }).select().single();
+
+      if (insertError || !order) throw new Error('Your order was not saved. Please try again.');
+      saveTrackedOrder({ id: order.id, token, number: order.order_number });
 
       if (order) {
         orderNumbers.push(order.order_number);
-        await supabase.from('order_items').insert(sellerItems.map(i => ({
+        const { error: itemError } = await supabase.from('order_items').insert(sellerItems.map(i => ({
           order_id: order.id, product_id: i.product.id, product_name: i.product.name,
           product_image: i.product.image_urls[0] || null, seller_id: sellerId,
           selected_size: i.selectedSize || null,
           quantity: i.quantity, unit_price: i.product.real_price, total_price: i.product.real_price * i.quantity,
         })));
+        if (itemError) throw new Error('Your order was saved, but some items need review. Check My Orders before ordering again.');
       }
     }
 
     clearCart();
     setSubmitting(false);
     onSuccess(orderNumbers.join(', '));
+    } catch (err) {
+      setOrderError(err instanceof Error ? err.message : 'Could not place your order. Please try again.');
+    } finally { setSubmitting(false); }
   }
 
   if (items.length === 0) {
@@ -210,6 +225,7 @@ export default function Checkout({ onBack, onSuccess }: Props) {
               <p className="text-xs text-gray-500">Pay when you receive your order</p>
             </div>
 
+            {orderError && <p role="alert" className="text-sm text-destructive mt-4">{orderError}</p>}
             <button onClick={placeOrder} disabled={submitting || !form.name.trim() || !form.phone.trim() || !form.address.trim() || !locationReady}
               className="w-full mt-4 py-4 rounded-2xl font-bold text-white text-sm disabled:opacity-50 transition-all hover:opacity-90 active:scale-95"
               style={{ background: 'linear-gradient(135deg, #ff3b30 0%, #e8251a 100%)' }}>

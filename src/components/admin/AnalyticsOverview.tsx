@@ -2,32 +2,25 @@ import { useEffect, useMemo, useState } from 'react';
 import { AlertCircle, Ban, Boxes, Percent, RefreshCw, Receipt, ShoppingBag, Store, Wallet } from 'lucide-react';
 import { supabase, type OrderStatus, type ProductCategory, type SellerStatus } from '../../lib/supabase';
 import { AreaChart, BarChart, Donut, Funnel, Heatmap, KpiCard, Panel, PeriodPicker, RankList, buckets, compactMoney, count, inPeriod, money, pct, type Period } from '../analytics/charts';
+import { earningsSummary, ORDER_STATUSES, STATUS_TONE } from '../../lib/commerce';
+import { fetchAllRows } from '../../lib/data';
+import type { Seller } from '../../lib/supabase';
+import SellerAnalytics from '../seller/SellerAnalytics';
+import Button from '../ui/Button';
 
-type OrderRow = { id: string; order_number: string; customer_name: string; total: number; status: OrderStatus; created_at: string; province?: string | null; payment_method?: string | null; sellers?: { business_name: string } | null };
-type SellerRow = { id: string; status: SellerStatus; business_name: string; created_at: string };
+type OrderRow = { id: string; seller_id: string; commission_paid: boolean; order_number: string; customer_name: string; total: number; status: OrderStatus; created_at: string; province?: string | null; payment_method?: string | null; sellers?: { business_name: string } | null };
+type SellerRow = Seller;
 type ProductRow = { id: string; category: ProductCategory; categories?: ProductCategory[] | null; stock: number; is_active: boolean; name: string; created_at: string };
 type Data = { orders: OrderRow[]; sellers: SellerRow[]; products: ProductRow[]; errors: string[] };
 
-const statuses: OrderStatus[] = ['pending', 'confirmed', 'shipped', 'delivered', 'cancelled'];
+const statuses = ORDER_STATUSES;
 const sellerStatuses: SellerStatus[] = ['approved', 'pending', 'rejected', 'banned'];
 const categories: ProductCategory[] = ['men', 'women', 'kids', 'streetwear', 'old_money', 'budget'];
 const labels: Record<ProductCategory, string> = { men: 'Men', women: 'Women', kids: 'Kids', streetwear: 'Streetwear', old_money: 'Old Money', budget: 'Budget' };
-const statusTone: Record<OrderStatus, string> = { pending: 'bg-chart-amber/15 text-chart-amber', confirmed: 'bg-chart-blue/15 text-chart-blue', shipped: 'bg-chart-violet/15 text-chart-violet', delivered: 'bg-chart-green/15 text-chart-green', cancelled: 'bg-destructive/15 text-destructive' };
+const statusTone = STATUS_TONE;
 const delivered = (r: OrderRow) => (r.status === 'delivered' ? Number(r.total) || 0 : 0);
 
-async function fetchRows<T>(table: string, columns: string): Promise<T[]> {
-  const result: T[] = [];
-  for (let from = 0; ; from += 1000) {
-    const { data, error } = await supabase.from(table).select(columns).range(from, from + 999);
-    if (error) throw error;
-    const page = (data || []) as T[];
-    result.push(...page);
-    if (page.length < 1000) break;
-  }
-  return result;
-}
-
-export default function AnalyticsOverview() {
+export default function AnalyticsOverview({ selectedSellerId = '', onSelectSeller = () => {} }: { selectedSellerId?: string; onSelectSeller?: (id: string) => void }) {
   const [data, setData] = useState<Data | null>(null);
   const [loading, setLoading] = useState(true);
   const [period, setPeriod] = useState<Period>(30);
@@ -37,9 +30,9 @@ export default function AnalyticsOverview() {
     let active = true;
     setLoading(true);
     Promise.allSettled([
-      fetchRows<OrderRow>('orders', '*,sellers(business_name)'),
-      fetchRows<SellerRow>('sellers', 'id,status,business_name,created_at'),
-      fetchRows<ProductRow>('products', 'id,category,categories,stock,is_active,name,created_at'),
+      fetchAllRows<OrderRow>('orders', '*,sellers(business_name)'),
+      fetchAllRows<SellerRow>('sellers', '*'),
+      fetchAllRows<ProductRow>('products', 'id,category,categories,stock,is_active,name,created_at'),
     ]).then(results => {
       if (!active) return;
       const names = ['Orders', 'Sellers', 'Products'];
@@ -72,13 +65,15 @@ export default function AnalyticsOverview() {
     const reached = (s: OrderStatus[]) => cur.filter(r => s.includes(r.status)).length;
     const funnel = [
       { label: 'placed', value: cur.length },
+      { label: 'processing', value: reached(['processing', 'confirmed', 'shipped', 'delivered']) },
       { label: 'confirmed', value: reached(['confirmed', 'shipped', 'delivered']) },
-      { label: 'shipped', value: reached(['shipped', 'delivered']) },
       { label: 'delivered', value: del },
     ];
     return {
       cur, prev, rev, prevRev, aov, prevAov, cancel, revTrend, revPrev, orderTrend, topSellers, regions, funnel,
-      orderDist: statuses.map(s => ({ label: s, value: cur.filter(r => r.status === s).length })),
+      earnings: earningsSummary(cur),
+      sellerEarnings: data.sellers.map(seller => ({ seller, orders: cur.filter(r => r.seller_id === seller.id), earnings: earningsSummary(cur.filter(r => r.seller_id === seller.id)) })).sort((a, b) => b.earnings.sales - a.earnings.sales),
+      orderDist: statuses.map(s => ({ label: s, value: cur.filter(r => r.status === s || (s === 'confirmed' && r.status === 'shipped')).length })),
       sellerDist: sellerStatuses.map(s => ({ label: s, value: data.sellers.filter(x => x.status === s).length })),
       catDist: categories.map(c => ({ label: labels[c], value: data.products.filter(p => (p.categories?.length ? p.categories.includes(c) : p.category === c)).length })).sort((a, b) => b.value - a.value),
       active: data.products.filter(p => p.is_active).length,
@@ -91,12 +86,21 @@ export default function AnalyticsOverview() {
   if (loading) return <div className="analytics-shell"><h1 className="analytics-title mb-4">Operations overview</h1><div className="grid grid-cols-2 xl:grid-cols-6 gap-3">{Array.from({ length: 6 }).map((_, i) => <div key={i} className="dash-panel h-32 animate-pulse bg-muted" />)}</div><p className="sr-only" role="status">Loading store activity…</p></div>;
   if (!data || !o) return <div className="dash-panel">Overview unavailable. <button onClick={() => setReload(v => v + 1)} className="text-primary underline">Retry</button></div>;
 
+  const seller = data.sellers.find(s => s.id === selectedSellerId);
+  const sellerPicker = <div className="mb-5 flex flex-wrap items-center gap-3"><label htmlFor="seller-report" className="text-sm font-semibold text-foreground">Sales overview</label><select id="seller-report" value={selectedSellerId} onChange={e => onSelectSeller(e.target.value)} className="max-w-full min-w-0 rounded-md border border-border bg-card p-2 text-sm text-foreground"><option value="">All sellers</option>{data.sellers.map(s => <option key={s.id} value={s.id}>{s.business_name}</option>)}</select>{seller && <Button variant="outline" onClick={() => onSelectSeller('')}>All sellers</Button>}</div>;
+  if (seller) return <div>{sellerPicker}<SellerAnalytics key={seller.id} seller={seller} adminView /></div>;
+
   return <div className="analytics-shell">
+    {sellerPicker}
     <header className="flex flex-wrap items-end justify-between gap-4 mb-5">
       <div><p className="text-xs font-bold uppercase tracking-wider text-primary mb-1">Wearza Seller Central · Admin</p><h1 className="analytics-title">Operations overview</h1><p className="text-sm text-muted-foreground mt-1">Marketplace performance compared with the previous {period} days</p></div>
       <div className="flex items-center gap-2"><PeriodPicker value={period} onChange={setPeriod} /><button onClick={() => setReload(v => v + 1)} title="Refresh data" aria-label="Refresh data" className="analytics-icon-button"><RefreshCw size={16} /></button></div>
     </header>
     {data.errors.length > 0 && <div role="alert" className="flex items-center gap-2 border border-destructive/30 bg-destructive/10 text-destructive rounded-xl p-3 mb-4 text-sm"><AlertCircle size={17} /> Could not load {data.errors.join(', ').toLowerCase()}. Some figures may be incomplete. <button className="underline ml-auto" onClick={() => setReload(v => v + 1)}>Retry</button></div>}
+
+    <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 mb-3"><KpiCard label="Wearza commission" value={compactMoney(o.earnings.commission)} context="10% · delivered orders" icon={Percent} color="var(--chart-blue)" /><KpiCard label="Seller earnings" value={compactMoney(o.earnings.sellerNet)} context="After platform commission" icon={Wallet} color="var(--chart-green)" /><KpiCard label="Commission due" value={compactMoney(o.earnings.due)} context="Awaiting payment" icon={Receipt} color="var(--chart-amber)" /><KpiCard label="Commission paid" value={compactMoney(o.earnings.paid)} context="Recorded payments" icon={Store} color="var(--chart-violet)" /></div>
+
+    <Panel title="Seller earnings" subtitle={`Last ${period} days · delivered orders only`} className="mb-3"><div className="overflow-x-auto"><table className="w-full text-left text-xs min-w-[650px]"><thead className="text-muted-foreground border-b border-border"><tr>{['Seller', 'Orders', 'Sales', 'Seller earnings', 'Wearza (10%)', 'Commission due'].map(h => <th key={h} className="p-2 font-medium">{h}</th>)}</tr></thead><tbody>{o.sellerEarnings.map(row => <tr key={row.seller.id} className="border-b border-border last:border-0"><td className="p-2"><Button variant="ghost" onClick={() => onSelectSeller(row.seller.id)} className="text-primary text-xs px-0">{row.seller.business_name}</Button></td><td className="p-2">{row.orders.length}</td><td className="p-2 whitespace-nowrap">{money(row.earnings.sales)}</td><td className="p-2 font-bold whitespace-nowrap">{money(row.earnings.sellerNet)}</td><td className="p-2 whitespace-nowrap">{money(row.earnings.commission)}</td><td className="p-2 whitespace-nowrap">{money(row.earnings.due)}</td></tr>)}</tbody></table></div></Panel>
 
     <div className="grid grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-3 mb-3">
       <KpiCard label="GMV (delivered)" value={compactMoney(o.rev)} delta={pct(o.rev, o.prevRev)} context="vs prev." icon={Wallet} spark={o.revTrend.map(p => p.value)} color="var(--chart-1)" />
@@ -109,7 +113,7 @@ export default function AnalyticsOverview() {
 
     <div className="grid grid-cols-1 xl:grid-cols-3 gap-3 mb-3">
       <Panel className="xl:col-span-2" title="Revenue trend" subtitle={`Delivered GMV · dashed line = previous ${period} days`} action={<span className="text-sm font-extrabold text-foreground">{money(o.rev)}</span>}><AreaChart data={o.revTrend} compare={o.revPrev} format={money} /></Panel>
-      <Panel title="Fulfilment funnel" subtitle="Order progression this period" action={<Percent size={16} className="text-muted-foreground" />}><Funnel steps={o.funnel} /><div className="mt-5 pt-4 border-t border-border"><p className="text-xs font-semibold text-muted-foreground mb-3">Order status mix</p><Donut values={o.orderDist} colors={['var(--chart-amber)', 'var(--chart-blue)', 'var(--chart-violet)', 'var(--chart-green)', 'var(--chart-red)']} centerLabel="orders" /></div></Panel>
+      <Panel title="Fulfilment funnel" subtitle="Order progression this period" action={<Percent size={16} className="text-muted-foreground" />}><Funnel steps={o.funnel} /><div className="mt-5 pt-4 border-t border-border"><p className="text-xs font-semibold text-muted-foreground mb-3">Order status mix</p><Donut values={o.orderDist} colors={['var(--chart-amber)', 'var(--chart-violet)', 'var(--chart-blue)', 'var(--chart-green)', 'var(--chart-red)']} centerLabel="orders" /></div></Panel>
     </div>
 
     <div className="grid grid-cols-1 lg:grid-cols-3 gap-3 mb-3">

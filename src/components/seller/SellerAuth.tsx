@@ -5,44 +5,20 @@ import { useSeller } from '../../contexts/SellerContext';
 import { PROVINCES, getDistricts, getMunicipalities } from '../../lib/nepalLocations';
 import { Store, ArrowLeft, Check, Camera, Upload, Shield, FileText, MapPin, Navigation, CreditCard } from 'lucide-react';
 import PasswordField from '../PasswordField';
+import { POLICY_VERSION, SELLER_TC, REFUND_POLICY } from '../../lib/sellerPolicies';
+import { COMMISSION_PERCENT } from '../../lib/commerce';
 
 interface Props {
   onBack: () => void;
   onSuccess: () => void;
 }
 
-const SELLER_TC = [
-  'You must be at least 18 years old and legally allowed to run a business in Nepal.',
-  'All information and documents you submit (citizenship, PAN/VAT, shop registration) must be true and your own.',
-  'You may only sell genuine, legal clothing and fashion items. Fake, copied, stolen or banned goods are not allowed.',
-  'Product photos, prices, sizes and stock must be accurate. Do not use misleading discounts or other sellers\u2019 photos.',
-  'You are fully responsible for packing and delivering every order yourself, on time, in good condition.',
-  'Confirm or cancel new orders within 24 hours and update order status honestly (confirmed, shipped, delivered).',
-  'Cash on Delivery money collected from customers belongs to you; you must pay Wearza\u2019s agreed commission on delivered orders on time.',
-  'Be polite to customers. Abuse, spam, or asking customers to pay outside Wearza is not allowed.',
-  'Customer details (name, phone, address) may only be used to deliver their order and must never be shared or sold.',
-  'Wearza may hide products, reject, suspend or permanently ban your shop for breaking these rules, fake reviews, or repeated complaints.',
-  'Wearza can update these terms; continuing to sell after an update means you accept the new terms.',
-];
-
-const REFUND_POLICY = [
-  'Customers can request a return within 7 days of delivery.',
-  'Accepted reasons: wrong item, wrong size sent, damaged or defective item, or item very different from the photos/description.',
-  'Returned items must be unused, unwashed, with original tags and packaging.',
-  'Innerwear, socks, and items marked \u201cNo Return\u201d on the product page are not returnable unless damaged or wrong.',
-  'If the mistake is yours (wrong, damaged or fake item), you pay the return delivery cost and must give a replacement or full refund.',
-  'Size exchanges for customer change-of-mind may be offered; the customer can be asked to pay delivery charges.',
-  'Refunds must be paid to the customer within 5 working days after you receive the returned item.',
-  'You must reply to every return request within 48 hours. Ignored requests may be decided by Wearza in the customer\u2019s favour.',
-  'Repeated refund complaints or refusing valid returns can lead to suspension or ban of your shop.',
-];
-
 const BUSINESS_TERMS = [
   'All products must be genuine',
   'Seller handles delivery themselves',
   'Cash on Delivery (COD) is mandatory',
   'Seller is responsible for product quality',
-  'Seller must pay platform commission (25%) after order completion',
+  'Seller must pay platform commission (10%) on delivered orders only',
   'Payment must be sent to eSewa number: 9807470285',
 ];
 
@@ -112,7 +88,8 @@ export default function SellerAuth({ onBack, onSuccess }: Props) {
       business_license_url: form.business_license_url || null,
       citizenship_front_url: form.citizenship_front_url, citizenship_back_url: form.citizenship_back_url,
       terms_agreed: true, terms_business_agreed: form.terms_business_agreed, terms_legal_agreed: form.terms_legal_agreed,
-      commission_rate: 25,
+      commission_rate: COMMISSION_PERCENT, self_delivery: true, refund_policy_agreed: true,
+      policy_version: POLICY_VERSION, policies_accepted_at: new Date().toISOString(),
     }).select().single();
 
     if (ie || !data) { setError('Failed to create account. Please try again.'); setLoading(false); return; }

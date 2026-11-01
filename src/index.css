@@ -59,6 +59,9 @@ body {
 .no-scrollbar::-webkit-scrollbar { display: none; }
 .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
 
+.commerce-dialog { max-height: 90dvh; overflow-y: auto; }
+.commerce-dialog::backdrop { background: hsl(var(--foreground) / .55); }
+
 * { scroll-behavior: smooth; }
 
 ::-webkit-scrollbar { width: 6px; height: 6px; }

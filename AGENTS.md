@@ -15,3 +15,8 @@
 - Define analytics colors as semantic global CSS tokens and expose them through Tailwind so charts and controls stay visually consistent.
 - Use the cropped transparent Wearza mark for the white splash screen so the image does not show a white square or nested red tile.
 - Store data lives in Lovable Cloud; the app client must use env URL and publishable key only as a matching pair, falling back to publicConfig, so it never mixes keys from two backends.
+- Keep commission, cancellation eligibility and order transitions in `src/lib/commerce.ts`, mirrored by database validation triggers, so UI and saved rules agree.
+- Reuse `SellerAnalytics` for individual seller reporting in admin and seller views; use paginated fetching so high-volume stores are not silently truncated.
+- Guest order tracking uses device-held random capability tokens with SHA-256 hashes, never a phone-only global order listing; customer cancellation must validate the token and current status atomically.
+- Keep seller policy content versioned in one shared source used by signup and the seller policy view; new registrations record self-delivery and refund-policy acceptance.
+- Use shared Button and native Dialog controls for new commerce interactions so keyboard focus and styling stay consistent.

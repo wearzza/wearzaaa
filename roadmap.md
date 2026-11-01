@@ -1,3 +1,6 @@
-- [ ] Finish dense admin dashboard with live charts and clear loading/empty/error states.
-- [ ] Confirm password visibility throughout account flows and polish narrow-screen layouts.
-- [ ] Correct splash logo animation on white and verify desktop/mobile customer and admin flows.
+- [ ] Set existing and new seller commission to 10% with earnings breakdowns.
+- [ ] Add processing status and reason-based customer cancellation before confirmation only.
+- [ ] Shorten seller shop links and improve seller overview.
+- [ ] Strengthen visible seller rules and signup acceptance.
+- [ ] Add per-seller sales and earnings overview in admin.
+- [ ] Verify order rules and customer/seller/admin flows on phone and desktop.

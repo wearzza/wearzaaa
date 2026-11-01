@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { supabase, Product, Seller } from './supabase';
+export { shopHandle, shopUrl } from './shopLinks';
 
 export interface Category { id?: string; slug: string; label: string; icon?: string; color?: string; sort_order?: number; is_active?: boolean; created_by_seller?: string | null }
 
@@ -28,8 +29,6 @@ export function useCategories() {
 }
 
 export const slugify = (s: string) => s.toLowerCase().trim().replace(/[^a-z0-9]+/g, '_').replace(/^_|_$/g, '').slice(0, 30);
-export const shopHandle = (s: Pick<Seller, 'id'> & { shop_slug?: string }) => s.shop_slug || s.id.slice(0, 8);
-export const shopUrl = (s: Pick<Seller, 'id'> & { shop_slug?: string }) => `${window.location.origin}/s/${shopHandle(s)}`;
 
 // ---------- Search ----------
 const SYN: Record<string, string[]> = {

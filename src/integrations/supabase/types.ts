@@ -201,14 +201,21 @@ export type Database = {
       }
       orders: {
         Row: {
+          cancellation_details: string | null
+          cancellation_reason: string | null
+          cancelled_at: string | null
+          cancelled_by: string | null
           commission_paid: boolean
+          confirmed_at: string | null
           created_at: string | null
           customer_address: string
           customer_location: string
           customer_name: string
           customer_phone: string
+          delivered_at: string | null
           district: string | null
           id: string
+          management_token_hash: string | null
           map_url: string | null
           municipality: string | null
           notes: string | null
@@ -225,14 +232,21 @@ export type Database = {
           ward_number: number | null
         }
         Insert: {
+          cancellation_details?: string | null
+          cancellation_reason?: string | null
+          cancelled_at?: string | null
+          cancelled_by?: string | null
           commission_paid?: boolean
+          confirmed_at?: string | null
           created_at?: string | null
           customer_address: string
           customer_location: string
           customer_name: string
           customer_phone: string
+          delivered_at?: string | null
           district?: string | null
           id?: string
+          management_token_hash?: string | null
           map_url?: string | null
           municipality?: string | null
           notes?: string | null
@@ -249,14 +263,21 @@ export type Database = {
           ward_number?: number | null
         }
         Update: {
+          cancellation_details?: string | null
+          cancellation_reason?: string | null
+          cancelled_at?: string | null
+          cancelled_by?: string | null
           commission_paid?: boolean
+          confirmed_at?: string | null
           created_at?: string | null
           customer_address?: string
           customer_location?: string
           customer_name?: string
           customer_phone?: string
+          delivered_at?: string | null
           district?: string | null
           id?: string
+          management_token_hash?: string | null
           map_url?: string | null
           municipality?: string | null
           notes?: string | null
@@ -489,7 +510,11 @@ export type Database = {
           pan_vat_url: string | null
           password_hash: string
           phone: string
+          policies_accepted_at: string | null
+          policy_version: string | null
           province: string | null
+          refund_policy_agreed: boolean
+          self_delivery: boolean
           shop_banner_url: string | null
           shop_description: string | null
           shop_location: string
@@ -523,7 +548,11 @@ export type Database = {
           pan_vat_url?: string | null
           password_hash: string
           phone: string
+          policies_accepted_at?: string | null
+          policy_version?: string | null
           province?: string | null
+          refund_policy_agreed?: boolean
+          self_delivery?: boolean
           shop_banner_url?: string | null
           shop_description?: string | null
           shop_location?: string
@@ -557,7 +586,11 @@ export type Database = {
           pan_vat_url?: string | null
           password_hash?: string
           phone?: string
+          policies_accepted_at?: string | null
+          policy_version?: string | null
           province?: string | null
+          refund_policy_agreed?: boolean
+          self_delivery?: boolean
           shop_banner_url?: string | null
           shop_description?: string | null
           shop_location?: string
@@ -579,9 +612,22 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      wearza_cancel_customer_order: {
+        Args: {
+          _details?: string
+          _order_id: string
+          _reason: string
+          _token: string
+        }
+        Returns: Json
+      }
       wearza_make_slug: {
         Args: { _id: string; _name: string }
         Returns: string
+      }
+      wearza_tracked_order: {
+        Args: { _order_id: string; _token: string }
+        Returns: Json
       }
     }
     Enums: {
