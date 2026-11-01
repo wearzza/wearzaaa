@@ -7,8 +7,12 @@ import PasswordField from '../PasswordField';
 import SellerAnalytics from './SellerAnalytics';
 import ShopLinkCard from './ShopLinkCard';
 import { useCategories, refreshCategories, slugify } from '../../lib/catalog';
+import { canChangeOrderStatus, cancellationLabel, orderEarnings, ORDER_STATUSES, statusLabel } from '../../lib/commerce';
+import CancelOrderDialog from '../CancelOrderDialog';
+import SellerRules from './SellerRules';
+import Button from '../ui/Button';
 
-type Tab = 'overview' | 'products' | 'orders' | 'promos' | 'reviews' | 'notifications' | 'branding' | 'settings';
+type Tab = 'overview' | 'products' | 'orders' | 'promos' | 'reviews' | 'notifications' | 'branding' | 'settings' | 'rules';
 
 export default function SellerDashboard() {
   const { seller, setSeller, logout } = useSeller();
@@ -19,8 +23,8 @@ export default function SellerDashboard() {
     if (!seller?.id) return;
     let active = true;
     const refreshStatus = async () => {
-      const { data, error } = await supabase.from('sellers').select('status').eq('id', seller.id).maybeSingle();
-      if (active && !error && data && data.status !== seller.status) setSeller({ ...seller, status: data.status });
+      const { data, error } = await supabase.from('sellers').select('status,commission_rate,shop_slug').eq('id', seller.id).maybeSingle();
+      if (active && !error && data && (data.status !== seller.status || data.commission_rate !== seller.commission_rate || data.shop_slug !== seller.shop_slug)) setSeller({ ...seller, ...data });
     };
     refreshStatus();
     window.addEventListener('focus', refreshStatus);
@@ -57,6 +61,7 @@ export default function SellerDashboard() {
     { id: 'notifications', label: 'Notifications', icon: Bell },
     { id: 'branding', label: 'Branding', icon: Store },
     { id: 'settings', label: 'Settings', icon: Settings },
+    { id: 'rules', label: 'Rules & Policies', icon: Store },
   ];
 
   return (
@@ -95,6 +100,7 @@ export default function SellerDashboard() {
         {tab === 'notifications' && <NotificationsTab seller={seller} />}
         {tab === 'branding' && <BrandingTab seller={seller} />}
         {tab === 'settings' && <SettingsTab seller={seller} />}
+        {tab === 'rules' && <SellerRules />}
       </main>
     </div>
   );
@@ -294,26 +300,50 @@ function OrdersTab({ seller }: { seller: Seller }) {
   const [orders, setOrders] = useState<Order[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
+  const [cancelling, setCancelling] = useState<Order | null>(null);
+  const [statusError, setStatusError] = useState('');
+  const [savingId, setSavingId] = useState<string | null>(null);
 
   async function load() {
     setLoading(true);
-    const { data } = await supabase.from('orders').select('*, order_items(*)').eq('seller_id', seller.id).order('created_at', { ascending: false });
+    const { data, error } = await supabase.from('orders').select('*, order_items(*)').eq('seller_id', seller.id).order('created_at', { ascending: false });
+    if (error) setStatusError('Could not load your orders. Please try again.');
     setOrders(data || []);
     setLoading(false);
   }
   useEffect(() => { load(); }, [seller.id]);
 
-  async function updateStatus(id: string, status: string) {
-    await supabase.from('orders').update({ status, updated_at: new Date().toISOString() }).eq('id', id);
-    load();
-    if (selectedOrder?.id === id) setSelectedOrder(prev => prev ? { ...prev, status: status as any } : null);
+  async function updateStatus(id: string, status: Order['status']) {
+    const order = orders.find(o => o.id === id);
+    if (!order || savingId || !canChangeOrderStatus(order.status, status)) return;
+    if (status === 'cancelled') { setCancelling(order); return; }
+    if (status === 'confirmed' && !window.confirm('Confirm this order? Customer cancellation will close.')) return;
+    if (status === 'delivered' && !window.confirm('Has the customer received this order? Mark delivered only after handover.')) return;
+    setSavingId(id); setStatusError('');
+    try {
+      const { data, error } = await supabase.from('orders').update({ status, updated_at: new Date().toISOString() }).eq('id', id).eq('seller_id', seller.id).eq('status', order.status).select('*,order_items(*)').maybeSingle();
+      if (error || !data) throw new Error(error?.message || 'The order changed. Refresh and try again.');
+      setOrders(prev => prev.map(o => o.id === id ? data : o));
+      if (selectedOrder?.id === id) setSelectedOrder(data);
+    } catch (err) { setStatusError(err instanceof Error ? err.message : 'Status was not saved.'); }
+    finally { setSavingId(null); }
   }
 
-  const colors: Record<string, string> = { pending: '#f59e0b', confirmed: '#3b82f6', shipped: '#8b5cf6', delivered: '#22c55e', cancelled: '#ef4444' };
+  async function cancelOrder(reason: string, details: string) {
+    if (!cancelling) return;
+    const { data, error } = await supabase.from('orders').update({ status: 'cancelled', cancelled_by: 'seller', cancellation_reason: reason, cancellation_details: details }).eq('id', cancelling.id).eq('seller_id', seller.id).eq('status', cancelling.status).select('*,order_items(*)').maybeSingle();
+    if (error || !data) throw new Error(error?.message || 'The order changed. Please refresh and try again.');
+    setOrders(prev => prev.map(o => o.id === data.id ? data : o));
+    if (selectedOrder?.id === data.id) setSelectedOrder(data);
+    setCancelling(null);
+  }
+
+  const colors: Record<string, string> = { pending: 'var(--chart-amber)', processing: 'var(--chart-violet)', confirmed: 'var(--chart-blue)', shipped: 'var(--chart-blue)', delivered: 'var(--chart-green)', cancelled: 'var(--chart-red)' };
 
   return (
     <div>
       <h1 className="text-2xl font-black text-gray-900 mb-6">Orders</h1>
+      {statusError && <p role="alert" className="text-destructive text-sm mb-4">{statusError}</p>}
       {loading ? <div className="text-center py-10 text-gray-400">Loading...</div> : orders.length === 0 ? (
         <div className="text-center py-20 bg-white rounded-2xl" style={{ boxShadow: '0 2px 12px rgba(0,0,0,0.05)' }}><ShoppingBag size={48} className="mx-auto text-gray-200 mb-4" /><p className="text-gray-500 font-medium">No orders yet</p></div>
       ) : (
@@ -322,31 +352,32 @@ function OrdersTab({ seller }: { seller: Seller }) {
             <div key={o.id} className="bg-white rounded-2xl p-4" style={{ boxShadow: '0 2px 12px rgba(0,0,0,0.05)' }}>
               <div className="flex flex-wrap items-start justify-between gap-2 mb-3">
                 <div><p className="text-xs text-gray-400">#{o.order_number}</p><p className="font-bold text-gray-800 text-sm">{o.customer_name} • {o.customer_phone}</p><p className="text-xs text-gray-400">{o.customer_address}, {o.customer_location}</p></div>
-                <span className="text-xs font-bold px-3 py-1 rounded-full" style={{ background: colors[o.status] + '15', color: colors[o.status] }}>{o.status}</span>
+                <span className="text-xs font-bold px-3 py-1 rounded-full" style={{ color: colors[o.status] }}>{statusLabel(o.status)}</span>
               </div>
               <div className="space-y-1 mb-3">
                 {o.order_items?.map((item: any) => (
                   <div key={item.id} className="flex items-center gap-2 text-sm">
                     <img src={item.product_image} alt="" className="w-8 h-8 rounded-lg object-cover" />
                     <span className="flex-1 line-clamp-1 text-gray-700">{item.product_name}</span>
-                    {item.selectedSize && <span className="text-xs text-gray-400">Size: {item.selectedSize}</span>}
+                    {item.selected_size && <span className="text-xs text-gray-400">Size: {item.selected_size}</span>}
                     <span className="text-gray-400 text-xs">×{item.quantity}</span>
                     <span className="font-bold text-gray-700">Rs. {item.total_price}</span>
                   </div>
                 ))}
               </div>
-              <div className="flex items-center justify-between pt-3 border-t border-gray-100">
-                <div className="flex items-center gap-3">
+              <div className="flex flex-wrap gap-3 items-center justify-between pt-3 border-t border-border">
+                <div className="flex flex-wrap items-center gap-3">
                   <span className="font-black" style={{ color: '#ff3b30' }}>Rs. {o.total.toLocaleString()}</span>
                   <button onClick={() => setSelectedOrder(o)} className="text-xs font-bold border border-gray-200 px-3 py-1.5 rounded-lg hover:border-blue-400 transition-colors">View Details</button>
                 </div>
-                <select value={o.status} onChange={e => updateStatus(o.id, e.target.value)} className="px-3 py-1.5 rounded-lg border border-gray-200 text-xs font-medium focus:outline-none focus:border-red-400 bg-white">
-                  <option value="pending">Pending</option><option value="confirmed">Confirmed</option><option value="shipped">Shipped</option><option value="delivered">Delivered</option><option value="cancelled">Cancelled</option>
+                <select aria-label={`Status for ${o.order_number}`} value={o.status === 'shipped' ? 'confirmed' : o.status} disabled={savingId === o.id || o.status === 'delivered' || o.status === 'cancelled'} onChange={e => updateStatus(o.id, e.target.value as Order['status'])} className="px-3 py-1.5 rounded-md border border-border text-xs font-medium bg-card text-foreground disabled:opacity-60">
+                  {ORDER_STATUSES.map(status => <option key={status} value={status} disabled={!canChangeOrderStatus(o.status, status)}>{statusLabel(status)}</option>)}
                 </select>
               </div>
               {o.status === 'delivered' && !o.commission_paid && (
-                <div className="mt-2 p-2 bg-yellow-50 rounded-lg text-xs text-yellow-700">Remember to pay 25% commission (Rs. {Math.round(o.total * 0.25)}) to eSewa: 9807470285</div>
+                <div className="mt-3 p-3 bg-chart-amber/10 rounded-md text-xs text-chart-amber">10% Wearza commission due: Rs. {orderEarnings(o.total).commission.toLocaleString()} · Seller earnings: Rs. {orderEarnings(o.total).sellerNet.toLocaleString()} · eSewa: 9807470285</div>
               )}
+              {o.status === 'cancelled' && <p className="text-xs text-muted-foreground mt-3">Cancelled by {o.cancelled_by || 'seller'} · {cancellationLabel(o.cancellation_reason)}{o.cancellation_details ? ` — ${o.cancellation_details}` : ''}</p>}
             </div>
           ))}
         </div>
@@ -394,7 +425,7 @@ function OrdersTab({ seller }: { seller: Seller }) {
                     <img src={item.product_image} alt="" className="w-10 h-10 rounded-lg object-cover" />
                     <div className="flex-1 min-w-0">
                       <p className="font-medium text-gray-700 line-clamp-1">{item.product_name}</p>
-                      <p className="text-xs text-gray-400">Qty {item.quantity}{item.selectedSize ? ` • Size: ${item.selectedSize}` : ''}</p>
+                      <p className="text-xs text-gray-400">Qty {item.quantity}{item.selected_size ? ` • Size: ${item.selected_size}` : ''}</p>
                     </div>
                     <span className="font-bold text-gray-700">Rs. {item.total_price}</span>
                   </div>
@@ -416,13 +447,14 @@ function OrdersTab({ seller }: { seller: Seller }) {
 
             <div>
               <h3 className="font-bold text-sm text-gray-800 mb-2">Update Status</h3>
-              <select value={selectedOrder.status} onChange={e => updateStatus(selectedOrder.id, e.target.value)} className="w-full px-4 py-2.5 rounded-xl border border-gray-200 text-sm font-medium focus:outline-none focus:border-red-400 bg-white">
-                <option value="pending">Pending</option><option value="confirmed">Confirmed</option><option value="shipped">Shipped</option><option value="delivered">Delivered</option><option value="cancelled">Cancelled</option>
+              <select aria-label="Update order status" value={selectedOrder.status === 'shipped' ? 'confirmed' : selectedOrder.status} disabled={savingId === selectedOrder.id || selectedOrder.status === 'delivered' || selectedOrder.status === 'cancelled'} onChange={e => updateStatus(selectedOrder.id, e.target.value as Order['status'])} className="w-full px-4 py-2.5 rounded-md border border-border text-sm font-medium bg-card text-foreground disabled:opacity-60">
+                {ORDER_STATUSES.map(status => <option key={status} value={status} disabled={!canChangeOrderStatus(selectedOrder.status, status)}>{statusLabel(status)}</option>)}
               </select>
             </div>
           </div>
         </div>
       )}
+      {cancelling && <CancelOrderDialog order={cancelling} actor="seller" onClose={() => setCancelling(null)} onConfirm={cancelOrder} />}
     </div>
   );
 }
