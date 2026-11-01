@@ -8,6 +8,13 @@
       "when": 1791384578928,
       "tag": "0000_wearza_store",
       "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "7",
+      "when": 1793497335232,
+      "tag": "0001_wearza_order_rules_and_commission",
+      "breakpoints": true
     }
   ]
 }
