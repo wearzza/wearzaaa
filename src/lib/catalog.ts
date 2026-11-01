@@ -29,7 +29,7 @@ export function useCategories() {
 
 export const slugify = (s: string) => s.toLowerCase().trim().replace(/[^a-z0-9]+/g, '_').replace(/^_|_$/g, '').slice(0, 30);
 export const shopHandle = (s: Pick<Seller, 'id'> & { shop_slug?: string }) => s.shop_slug || s.id.slice(0, 8);
-export const shopUrl = (s: Pick<Seller, 'id'> & { shop_slug?: string }) => `${window.location.origin}/s/${shopHandle(s)}`;
+export const shopUrl = (s: Pick<Seller, 'id'> & { shop_slug?: string }) => `https://wearza.lovable.app/s/${shopHandle(s)}`;
 
 // ---------- Search ----------
 const SYN: Record<string, string[]> = {

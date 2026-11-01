@@ -1,110 +1,56 @@
 import { useEffect, useState } from 'react';
-import { supabase, Order } from '../../lib/supabase';
-import { Package, Clock, Truck, CheckCircle, XCircle, MapPin, Trash2 } from 'lucide-react';
-
-const STATUS: Record<string, { color: string; icon: any; label: string }> = {
-  pending: { color: '#f59e0b', icon: Clock, label: 'Pending' },
-  confirmed: { color: '#3b82f6', icon: CheckCircle, label: 'Confirmed' },
-  shipped: { color: '#8b5cf6', icon: Truck, label: 'Shipped' },
-  delivered: { color: '#22c55e', icon: CheckCircle, label: 'Delivered' },
-  cancelled: { color: '#ef4444', icon: XCircle, label: 'Cancelled' },
-};
+import { supabase, type Order } from '../../lib/supabase';
+import { Package, Truck, MapPin, RefreshCw, XCircle, CheckCircle } from 'lucide-react';
+import { canCustomerCancel, cancellationLabel, STATUS_TONE, statusLabel } from '../../lib/commerce';
+import { loadTrackedOrder, readTrackedOrders } from '../../lib/orderTracking';
+import CancelOrderDialog from '../CancelOrderDialog';
+import Button from '../ui/Button';
 
 export default function OrdersPage({ onHome }: { onHome: () => void }) {
   const [orders, setOrders] = useState<Order[]>([]);
   const [loading, setLoading] = useState(true);
-  const [phoneFilter, setPhoneFilter] = useState('');
-
+  const [error, setError] = useState('');
+  const [notice, setNotice] = useState('');
+  const [selected, setSelected] = useState<Order | null>(null);
+  const [filter, setFilter] = useState('all');
   async function load() {
-    const { data } = await supabase.from('orders').select('*, order_items(*)').order('created_at', { ascending: false }).limit(50);
-    setOrders(data || []);
-    setLoading(false);
+    setError('');
+    try {
+      const results = await Promise.all(readTrackedOrders().map(loadTrackedOrder));
+      setOrders(results.filter((r): r is Order => r !== null).sort((a, b) => +new Date(b.created_at) - +new Date(a.created_at)));
+    } catch { setError('Could not load your orders. Please try again.'); }
+    finally { setLoading(false); }
   }
-  useEffect(() => { load(); }, []);
-
-  async function cancelOrder(id: string) {
-    if (!confirm('Cancel this order? This cannot be undone.')) return;
-    await supabase.from('orders').update({ status: 'cancelled', updated_at: new Date().toISOString() }).eq('id', id);
+  useEffect(() => {
     load();
+    const timer = window.setInterval(load, 15000);
+    window.addEventListener('focus', load);
+    return () => { clearInterval(timer); window.removeEventListener('focus', load); };
+  }, []);
+  async function cancel(reason: string, details: string) {
+    if (!selected) return;
+    const tracking = readTrackedOrders().find(r => r.id === selected.id);
+    if (!tracking) throw new Error('This device does not have access to cancel this order.');
+    const { data, error } = await supabase.rpc('wearza_cancel_customer_order', { _order_id: selected.id, _token: tracking.token, _reason: reason, _details: details });
+    if (error || !data) { await load(); throw new Error(error?.message || 'Cancellation was not saved.'); }
+    setOrders(prev => prev.map(order => order.id === selected.id ? data as Order : order));
+    setSelected(null); setNotice('Your order was cancelled. No payment is due.');
   }
-
-  const filtered = phoneFilter ? orders.filter(o => o.customer_phone.includes(phoneFilter)) : orders;
-
-  return (
-    <div className="max-w-3xl mx-auto px-4 py-4">
-      <h1 className="text-2xl font-black text-gray-900 mb-4">Track Orders</h1>
-
-      <div className="mb-4">
-        <input type="tel" placeholder="Filter by your phone number..." value={phoneFilter} onChange={e => setPhoneFilter(e.target.value)}
-          className="w-full px-4 py-3 rounded-xl border border-gray-200 text-sm focus:outline-none focus:border-red-400" />
-      </div>
-
-      {loading ? (
-        <div className="text-center py-10 text-gray-400">Loading orders...</div>
-      ) : filtered.length === 0 ? (
-        <div className="text-center py-20">
-          <Package size={48} className="mx-auto text-gray-200 mb-4" />
-          <p className="text-gray-500 font-medium">No orders found</p>
-          <button onClick={onHome} className="mt-4 text-sm font-bold" style={{ color: '#ff3b30' }}>Start Shopping</button>
-        </div>
-      ) : (
-        <div className="space-y-3">
-          {filtered.map(order => {
-            const cfg = STATUS[order.status];
-            const StatusIcon = cfg.icon;
-            return (
-              <div key={order.id} className="bg-white rounded-2xl p-4" style={{ boxShadow: '0 2px 12px rgba(0,0,0,0.05)' }}>
-                <div className="flex items-start justify-between mb-3">
-                  <div>
-                    <p className="text-xs text-gray-400">Order #{order.order_number}</p>
-                    <p className="text-sm font-bold text-gray-800 mt-0.5">{new Date(order.created_at).toLocaleDateString('en-US', { dateStyle: 'medium' })}</p>
-                  </div>
-                  <span className="inline-flex items-center gap-1 text-xs font-bold px-3 py-1.5 rounded-full" style={{ background: cfg.color + '15', color: cfg.color }}>
-                    <StatusIcon size={12} /> {cfg.label}
-                  </span>
-                </div>
-
-                <div className="space-y-2 mb-3">
-                  {order.order_items?.map(item => (
-                    <div key={item.id} className="flex gap-2 items-center">
-                      <img src={item.product_image || 'https://images.pexels.com/photos/1536619/pexels-photo-1536619.jpeg?auto=compress&cs=tinysrgb&w=100'} alt="" className="w-10 h-10 rounded-lg object-cover" />
-                      <div className="flex-1 min-w-0">
-                        <p className="text-sm font-medium text-gray-700 line-clamp-1">{item.product_name}</p>
-                        <p className="text-xs text-gray-400">Qty {item.quantity}{item.selected_size ? ` • Size: ${item.selected_size}` : ''}</p>
-                      </div>
-                      <span className="text-sm font-bold text-gray-700">Rs. {item.total_price.toLocaleString()}</span>
-                    </div>
-                  ))}
-                </div>
-
-                {(order.province || order.map_url) && (
-                  <div className="mb-3 p-2 bg-gray-50 rounded-lg text-xs text-gray-500 flex items-start gap-1.5">
-                    <MapPin size={12} className="flex-shrink-0 mt-0.5" />
-                    <div>
-                      <span>{order.municipality ? `${order.municipality}-${order.ward_number}, ` : ''}{order.district}, {order.province}</span>
-                      {order.map_url && <a href={order.map_url} target="_blank" rel="noopener noreferrer" className="ml-1 text-blue-500 hover:underline">View on Maps</a>}
-                    </div>
-                  </div>
-                )}
-
-                <div className="flex items-center justify-between pt-3 border-t border-gray-100">
-                  <div>
-                    <p className="text-xs text-gray-400">Total</p>
-                    <p className="font-black" style={{ color: '#ff3b30' }}>Rs. {order.total.toLocaleString()}</p>
-                  </div>
-                  {order.status === 'pending' ? (
-                    <button onClick={() => cancelOrder(order.id)} className="flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs font-bold border border-red-200 text-red-500 hover:bg-red-50 transition-colors">
-                      <Trash2 size={12} /> Cancel Order
-                    </button>
-                  ) : (
-                    <span className="text-xs text-gray-500 flex items-center gap-1"><Truck size={12} /> COD</span>
-                  )}
-                </div>
-              </div>
-            );
-          })}
-        </div>
-      )}
-    </div>
-  );
+  const filtered = orders.filter(o => filter === 'all' || (filter === 'active' ? o.status !== 'delivered' && o.status !== 'cancelled' : o.status === filter));
+  return <div className="max-w-3xl mx-auto px-4 py-6 text-foreground">
+    <header className="flex items-center justify-between gap-3 mb-5"><h1 className="text-2xl font-black">My Orders</h1><Button variant="outline" aria-label="Refresh orders" title="Refresh orders" onClick={load} className="w-9 h-9 p-0"><RefreshCw size={16} /></Button></header>
+    <div className="flex gap-2 overflow-x-auto mb-5" aria-label="Order filters">{['all', 'active', 'delivered', 'cancelled'].map(f => <Button key={f} variant={f === filter ? 'primary' : 'outline'} onClick={() => setFilter(f)} aria-pressed={f === filter} className="capitalize shrink-0">{f}</Button>)}</div>
+    {error && <p role="alert" className="mb-4 text-destructive text-sm">{error}</p>}
+    {notice && <p role="status" className="mb-4 p-3 bg-chart-green/10 border border-chart-green/30 rounded-md text-sm">{notice}</p>}
+    {loading ? <p role="status" className="text-center py-12 text-muted-foreground">Loading orders…</p> : filtered.length === 0 ? <div className="text-center py-16"><Package size={40} className="mx-auto text-muted-foreground mb-4" /><h2 className="font-bold">No orders found</h2><p className="text-sm text-muted-foreground mt-2 mb-5">New orders placed on this device will appear here.</p><Button onClick={onHome}>Start shopping</Button></div> : <div className="space-y-4">{filtered.map(order => <article key={order.id} className="bg-card border border-border rounded-lg p-4">
+      <div className="flex flex-wrap items-start justify-between gap-3 mb-4"><div><p className="text-xs text-muted-foreground">#{order.order_number}</p><p className="text-sm font-semibold mt-1">{new Date(order.created_at).toLocaleDateString('en', { dateStyle: 'medium' })}</p></div><span className={`px-3 py-1 text-xs rounded-full font-bold ${STATUS_TONE[order.status]}`}>{statusLabel(order.status)}</span></div>
+      <div className="space-y-3 mb-4">{order.order_items?.map(item => <div key={item.id} className="flex items-center gap-3">{item.product_image ? <img src={item.product_image} alt="" className="w-12 h-12 object-cover rounded-md shrink-0" /> : <Package className="w-12 h-12 text-muted-foreground shrink-0" />}<div className="min-w-0 flex-1"><p className="text-sm font-semibold break-words">{item.product_name}</p><p className="text-xs text-muted-foreground">Qty {item.quantity}{item.selected_size ? ` · Size ${item.selected_size}` : ''}</p></div><span className="text-sm font-bold shrink-0">Rs. {Number(item.total_price).toLocaleString()}</span></div>)}</div>
+      {order.status !== 'cancelled' && <ol className="grid grid-cols-4 gap-2 mb-4" aria-label="Order progress">{(['pending', 'processing', 'confirmed', 'delivered'] as const).map((s, i) => { const step = order.status === 'shipped' ? 2 : ['pending', 'processing', 'confirmed', 'delivered'].indexOf(order.status); return <li key={s} className={`border-t-2 pt-2 text-[10px] sm:text-xs ${i <= step ? 'border-primary text-foreground' : 'border-border text-muted-foreground'}`}>{statusLabel(s)}</li>; })}</ol>}
+      {order.province && <p className="flex gap-2 text-xs text-muted-foreground mb-4"><MapPin size={14} className="shrink-0" />{order.municipality}-{order.ward_number}, {order.district}, {order.province}</p>}
+      {order.status === 'cancelled' && <div className="bg-muted p-3 rounded-md text-sm mb-4"><p className="font-semibold flex gap-2 items-center"><XCircle size={15} />Cancelled by {order.cancelled_by || 'seller'}</p><p className="mt-1 text-muted-foreground">{cancellationLabel(order.cancellation_reason)}</p>{order.cancellation_details && <p className="mt-1 break-words text-muted-foreground">{order.cancellation_details}</p>}<p className="text-xs mt-2">No payment due · Cash on Delivery</p></div>}
+      <div className="flex flex-wrap items-center justify-between gap-3 border-t border-border pt-3"><div><p className="text-xs text-muted-foreground">Total</p><strong className="text-primary">Rs. {Number(order.total).toLocaleString()}</strong></div>{canCustomerCancel(order.status) ? <Button variant="outline" onClick={() => setSelected(order)} className="text-destructive"><XCircle size={14} />Cancel order</Button> : <span className="flex items-center gap-1 text-xs text-muted-foreground">{order.status === 'delivered' ? <CheckCircle size={14} /> : <Truck size={14} />}Cash on Delivery</span>}</div>
+      {(order.status === 'confirmed' || order.status === 'shipped') && <p className="text-xs text-muted-foreground mt-3">The seller confirmed your order. Cancellation is now closed.</p>}
+    </article>)}</div>}
+    {selected && <CancelOrderDialog order={selected} actor="customer" onClose={() => setSelected(null)} onConfirm={cancel} />}
+  </div>;
 }

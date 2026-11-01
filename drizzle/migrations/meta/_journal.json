@@ -22,6 +22,13 @@
       "when": 1793497393193,
       "tag": "0002_guest_order_tracking_and_cancellation",
       "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "7",
+      "when": 1793497480127,
+      "tag": "0003_sha256_guest_tracking",
+      "breakpoints": true
     }
   ]
 }
