@@ -66,6 +66,7 @@ export default function AnalyticsOverview({ selectedSellerId = '', onSelectSelle
     const funnel = [
       { label: 'placed', value: cur.length },
       { label: 'processing', value: reached(['processing', 'confirmed', 'shipped', 'delivered']) },
+      { label: 'confirmed', value: reached(['confirmed', 'shipped', 'delivered']) },
       { label: 'delivered', value: del },
     ];
     return {
@@ -112,7 +113,7 @@ export default function AnalyticsOverview({ selectedSellerId = '', onSelectSelle
 
     <div className="grid grid-cols-1 xl:grid-cols-3 gap-3 mb-3">
       <Panel className="xl:col-span-2" title="Revenue trend" subtitle={`Delivered GMV · dashed line = previous ${period} days`} action={<span className="text-sm font-extrabold text-foreground">{money(o.rev)}</span>}><AreaChart data={o.revTrend} compare={o.revPrev} format={money} /></Panel>
-      <Panel title="Fulfilment funnel" subtitle="Order progression this period" action={<Percent size={16} className="text-muted-foreground" />}><Funnel steps={o.funnel} /><div className="mt-5 pt-4 border-t border-border"><p className="text-xs font-semibold text-muted-foreground mb-3">Order status mix</p><Donut values={o.orderDist} colors={['var(--chart-amber)', 'var(--chart-blue)', 'var(--chart-violet)', 'var(--chart-green)', 'var(--chart-red)']} centerLabel="orders" /></div></Panel>
+      <Panel title="Fulfilment funnel" subtitle="Order progression this period" action={<Percent size={16} className="text-muted-foreground" />}><Funnel steps={o.funnel} /><div className="mt-5 pt-4 border-t border-border"><p className="text-xs font-semibold text-muted-foreground mb-3">Order status mix</p><Donut values={o.orderDist} colors={['var(--chart-amber)', 'var(--chart-violet)', 'var(--chart-blue)', 'var(--chart-green)', 'var(--chart-red)']} centerLabel="orders" /></div></Panel>
     </div>
 
     <div className="grid grid-cols-1 lg:grid-cols-3 gap-3 mb-3">
