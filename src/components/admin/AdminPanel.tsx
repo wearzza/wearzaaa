@@ -3,12 +3,15 @@ import { useEffect, useState } from 'react';
 import { supabase, Seller, SellerStatus, Order, PromoCode, Banner } from '../../lib/supabase';
 import AnalyticsOverview from './AnalyticsOverview';
 import CategoriesTab from './CategoriesTab';
+import Button from '../ui/Button';
+import { cancellationLabel } from '../../lib/commerce';
 import { Shield, Store, ShoppingBag, Tag, BarChart3, Bell, LogOut, Check, X, Ban, Image, Plus, Edit, Trash2, Upload } from 'lucide-react';
 
 type Tab = 'analytics' | 'sellers' | 'categories' | 'orders' | 'promos' | 'banners' | 'notifications';
 
 export default function AdminPanel({ onLogout }: { onLogout: () => void }) {
   const [tab, setTab] = useState<Tab>('analytics');
+  const [reportSellerId, setReportSellerId] = useState('');
   const confirmLogout = () => { if (window.confirm('Are you sure you want to log out?')) onLogout(); };
 
   const nav: { id: Tab; label: string; icon: any }[] = [
@@ -40,8 +43,8 @@ export default function AdminPanel({ onLogout }: { onLogout: () => void }) {
         </div>
       </aside>
       <main className="flex-1 min-w-0 p-4 md:p-8 overflow-x-hidden">
-        {tab === 'analytics' && <AnalyticsOverview />}
-        {tab === 'sellers' && <SellersTab />}
+        {tab === 'analytics' && <AnalyticsOverview selectedSellerId={reportSellerId} onSelectSeller={setReportSellerId} />}
+        {tab === 'sellers' && <SellersTab onSalesOverview={id => { setReportSellerId(id); setTab('analytics'); }} />}
         {tab === 'categories' && <CategoriesTab />}
         {tab === 'orders' && <OrdersTab />}
         {tab === 'promos' && <PromosTab />}
@@ -52,7 +55,7 @@ export default function AdminPanel({ onLogout }: { onLogout: () => void }) {
   );
 }
 
-function SellersTab() {
+function SellersTab({ onSalesOverview }: { onSalesOverview: (id: string) => void }) {
   const [sellers, setSellers] = useState<Seller[]>([]);
   const [filter, setFilter] = useState('all');
   const [selectedSeller, setSelectedSeller] = useState<Seller | null>(null);
@@ -117,10 +120,11 @@ function SellersTab() {
                   <p className="font-bold text-gray-800">{s.business_name}</p>
                   <span className="text-xs font-bold px-2 py-0.5 rounded-full" style={{ background: colors[s.status] + '15', color: colors[s.status] }}>{s.status}</span>
                 </div>
-                <p className="text-sm text-gray-500">{s.full_name} • {s.email}</p>
+                <p className="text-sm text-muted-foreground break-words">{s.full_name} • {s.email}</p>
                 <p className="text-xs text-gray-400 mt-1">{s.phone} • {s.shop_location}</p>
               </div>
               <div className="flex gap-2 flex-wrap" aria-busy={updatingId === s.id}>
+                <Button variant="outline" className="text-xs py-1.5" onClick={() => onSalesOverview(s.id)}><BarChart3 size={13} />Sales overview</Button>
                 <button onClick={() => setSelectedSeller(s)} className="px-3 py-1.5 rounded-lg text-xs font-bold border border-gray-200 hover:border-blue-400 transition-colors">View Details</button>
                 {s.status === 'pending' && (<>
                    <button disabled={!!updatingId} onClick={() => updateStatus(s.id, 'approved')} className="flex items-center gap-1 px-3 py-1.5 rounded-lg text-xs font-bold text-white disabled:opacity-50" style={{ background: '#22c55e' }}><Check size={12} /> Approve</button>
@@ -154,9 +158,10 @@ function SellersTab() {
             </div>
 
             {/* Personal & Business Info */}
+            <div className="mb-5 flex flex-wrap items-center justify-between gap-3 border-b border-border pb-4"><div><p className="text-xs text-muted-foreground">Wearza commission</p><p className="font-bold text-foreground">10% · Seller keeps 90%</p></div><Button variant="outline" onClick={() => onSalesOverview(selectedSeller.id)}><BarChart3 size={15} />Sales overview</Button></div>
             <div className="mb-5">
               <h3 className="font-bold text-sm text-gray-800 mb-2 pb-1 border-b border-gray-100">Personal & Business</h3>
-              <div className="grid grid-cols-2 gap-3 text-sm">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-sm break-words">
                 <div><p className="text-xs text-gray-400">Full Name</p><p className="font-medium text-gray-700">{selectedSeller.full_name}</p></div>
                 <div><p className="text-xs text-gray-400">Business Name</p><p className="font-medium text-gray-700">{selectedSeller.business_name}</p></div>
                 <div><p className="text-xs text-gray-400">Email</p><p className="font-medium text-gray-700">{selectedSeller.email}</p></div>
@@ -207,6 +212,9 @@ function SellersTab() {
             <div className="mb-2">
               <h3 className="font-bold text-sm text-gray-800 mb-2 pb-1 border-b border-gray-100">Agreements</h3>
               <div className="space-y-1.5 text-sm">
+                <p className="text-muted-foreground">Self-delivery: {selectedSeller.self_delivery ? 'Agreed' : 'Not recorded for this existing account'}</p>
+                <p className="text-muted-foreground">Return & refund policy: {selectedSeller.refund_policy_agreed ? 'Accepted' : 'Not yet recorded'}</p>
+                <p className="text-muted-foreground">Policy version: {selectedSeller.policy_version || 'Legacy account'}</p>
                 <div className="flex items-center gap-2"><span className={`w-5 h-5 rounded-full flex items-center justify-center ${selectedSeller.terms_business_agreed ? 'bg-green-100' : 'bg-gray-100'}`}><Check size={12} className={selectedSeller.terms_business_agreed ? 'text-green-600' : 'text-gray-300'} /></span><span className="text-gray-600">Business Agreement {selectedSeller.terms_business_agreed ? 'accepted' : 'not accepted'}</span></div>
                 <div className="flex items-center gap-2"><span className={`w-5 h-5 rounded-full flex items-center justify-center ${selectedSeller.terms_legal_agreed ? 'bg-green-100' : 'bg-gray-100'}`}><Check size={12} className={selectedSeller.terms_legal_agreed ? 'text-green-600' : 'text-gray-300'} /></span><span className="text-gray-600">Legal & Identity Agreement {selectedSeller.terms_legal_agreed ? 'accepted' : 'not accepted'}</span></div>
               </div>
@@ -231,7 +239,7 @@ function OrdersTab() {
     load();
   }, []);
 
-  const colors: Record<string, string> = { pending: '#f59e0b', confirmed: '#3b82f6', shipped: '#8b5cf6', delivered: '#22c55e', cancelled: '#ef4444' };
+  const colors: Record<string, string> = { pending: '#f59e0b', processing: '#8b5cf6', confirmed: '#3b82f6', shipped: '#3b82f6', delivered: '#22c55e', cancelled: '#ef4444' };
 
   return (
     <div>
@@ -260,6 +268,7 @@ function OrdersTab() {
                 <span className="text-xs text-gray-400">{new Date(o.created_at).toLocaleString()}</span>
                 <span className="font-black" style={{ color: '#ff3b30' }}>Rs. {o.total.toLocaleString()}</span>
               </div>
+              {o.status === 'cancelled' && <p className="text-xs text-muted-foreground mt-3">Cancelled by {o.cancelled_by || 'seller'} · {cancellationLabel(o.cancellation_reason)}{o.cancellation_details ? ` — ${o.cancellation_details}` : ''}</p>}
             </div>
           ))}
         </div>
