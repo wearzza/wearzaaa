@@ -4,6 +4,7 @@ import { supabase } from '../../lib/supabase';
 import { PROVINCES, getDistricts, getMunicipalities } from '../../lib/nepalLocations';
 import { ArrowLeft, Check, Tag, MapPin, Phone, User, Truck, Navigation } from 'lucide-react';
 import { saveTrackedOrder } from '../../lib/orderTracking';
+import Button from '../ui/Button';
 
 interface Props {
   onBack: () => void;
@@ -175,8 +176,8 @@ export default function Checkout({ onBack, onSuccess }: Props) {
               <div className="mt-3">
                 <label className="text-xs font-medium text-gray-600 mb-1 block">Google Maps Location</label>
                 <div className="flex gap-2">
-                  <input type="text" value={form.map_url} onChange={e => setForm({ ...form, map_url: e.target.value })} placeholder="Auto-captured or paste Maps URL" className="flex-1 px-3 py-2.5 rounded-xl border border-gray-200 text-sm focus:outline-none focus:border-red-400" />
-                  <button onClick={captureLocation} className="flex items-center gap-1.5 px-3 py-2.5 rounded-xl text-sm font-bold text-white whitespace-nowrap" style={{ background: '#3b82f6' }}><Navigation size={14} /> Capture</button>
+                  <input type="text" value={form.map_url} onChange={e => setForm({ ...form, map_url: e.target.value })} placeholder="Auto-captured or paste Maps URL" className="flex-1 min-w-0 px-3 py-2.5 rounded-md border border-border text-sm focus:outline-primary" />
+                  <Button onClick={captureLocation} className="shrink-0"><Navigation size={14} />Capture</Button>
                 </div>
                 {form.map_url && <a href={form.map_url} target="_blank" rel="noopener noreferrer" className="text-xs text-blue-500 mt-1 inline-block hover:underline">View on Maps</a>}
               </div>
@@ -191,8 +192,8 @@ export default function Checkout({ onBack, onSuccess }: Props) {
           <div className="bg-white rounded-2xl p-5" style={{ boxShadow: '0 2px 16px rgba(0,0,0,0.06)' }}>
             <h2 className="font-bold text-gray-800 mb-3 flex items-center gap-1.5"><Tag size={16} /> Promo Code</h2>
             <div className="flex gap-2">
-              <input type="text" value={form.promoCode} onChange={e => setForm({ ...form, promoCode: e.target.value })} placeholder="Enter promo code" className="flex-1 px-4 py-3 rounded-xl border border-gray-200 text-sm focus:outline-none focus:border-red-400 uppercase" />
-              <button onClick={applyPromo} className="px-5 py-3 rounded-xl font-bold text-sm text-white" style={{ background: '#1a2340' }}>Apply</button>
+              <input type="text" value={form.promoCode} onChange={e => setForm({ ...form, promoCode: e.target.value })} placeholder="Enter promo code" className="flex-1 min-w-0 px-4 py-3 rounded-md border border-border text-sm focus:outline-primary uppercase" />
+              <Button variant="outline" onClick={applyPromo} className="shrink-0">Apply</Button>
             </div>
             {promoError && <p className="text-xs text-red-500 mt-2">{promoError}</p>}
             {promoApplied && <p className="text-xs mt-2 flex items-center gap-1" style={{ color: '#22c55e' }}><Check size={12} /> Promo applied! You saved Rs. {promoDiscount}</p>}

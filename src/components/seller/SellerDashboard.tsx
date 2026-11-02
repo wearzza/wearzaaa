@@ -30,7 +30,7 @@ export default function SellerDashboard() {
     window.addEventListener('focus', refreshStatus);
     const timer = window.setInterval(refreshStatus, 30000);
     return () => { active = false; window.removeEventListener('focus', refreshStatus); window.clearInterval(timer); };
-  }, [seller?.id, seller?.status, setSeller]);
+  }, [seller?.id, seller?.status, seller?.commission_rate, seller?.shop_slug, setSeller]);
 
   if (!seller) return null;
 
@@ -46,6 +46,7 @@ export default function SellerDashboard() {
            <h1 className="text-2xl font-black text-gray-900 mb-2">{seller.status === 'banned' ? 'Account Banned' : seller.status === 'rejected' ? 'Application Rejected' : 'Account Under Review'}</h1>
           <p className="text-gray-500 mb-1">{statusMsg}</p>
            <p className="text-sm text-gray-400 mb-8">{seller.status === 'pending' ? 'You will be able to access seller features once admin approves your account. Please check back later.' : 'Contact Wearza support if you need assistance.'}</p>
+          {seller.status === 'pending' && <div className="text-left"><ShopLinkCard seller={seller} /></div>}
           <button onClick={confirmLogout} className="px-6 py-3 rounded-xl font-bold text-sm text-white" style={{ background: '#ff3b30' }}>Logout</button>
         </div>
       </div>

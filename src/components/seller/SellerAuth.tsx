@@ -7,6 +7,7 @@ import { Store, ArrowLeft, Check, Camera, Upload, Shield, FileText, MapPin, Navi
 import PasswordField from '../PasswordField';
 import { POLICY_VERSION, SELLER_TC, REFUND_POLICY } from '../../lib/sellerPolicies';
 import { COMMISSION_PERCENT } from '../../lib/commerce';
+import Button from '../ui/Button';
 
 interface Props {
   onBack: () => void;
@@ -236,8 +237,8 @@ export default function SellerAuth({ onBack, onSuccess }: Props) {
                 <div className="mt-3">
                   <label className="text-xs font-medium text-gray-600 mb-1 block">Google Maps Location</label>
                   <div className="flex gap-2">
-                    <input type="text" value={form.map_url} onChange={e => setForm({ ...form, map_url: e.target.value })} placeholder="Google Maps URL (auto or paste)" className="flex-1 px-3 py-2.5 rounded-xl border border-gray-200 text-sm focus:outline-none focus:border-red-400" />
-                    <button onClick={captureLocation} className="flex items-center gap-1.5 px-3 py-2.5 rounded-xl text-sm font-bold text-white whitespace-nowrap" style={{ background: '#3b82f6' }}><Navigation size={14} /> Capture</button>
+                    <input type="text" value={form.map_url} onChange={e => setForm({ ...form, map_url: e.target.value })} placeholder="Google Maps URL (auto or paste)" className="flex-1 min-w-0 px-3 py-2.5 rounded-md border border-border text-sm focus:outline-primary" />
+                    <Button onClick={captureLocation} className="shrink-0"><Navigation size={14} />Capture</Button>
                   </div>
                   {form.map_url && <a href={form.map_url} target="_blank" rel="noopener noreferrer" className="text-xs text-blue-500 mt-1 inline-block hover:underline">View on Maps</a>}
                 </div>
