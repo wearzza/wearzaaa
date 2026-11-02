@@ -126,8 +126,8 @@ export default function Checkout({ onBack, onSuccess }: Props) {
 
       <h1 className="text-2xl font-black text-gray-900 mb-6">Checkout</h1>
 
-      <div className="grid md:grid-cols-5 gap-6">
-        <div className="md:col-span-3 space-y-4">
+      <div className="grid grid-cols-1 md:grid-cols-5 gap-6">
+        <div className="min-w-0 md:col-span-3 space-y-4">
           <div className="bg-white rounded-2xl p-5 space-y-4" style={{ boxShadow: '0 2px 16px rgba(0,0,0,0.06)' }}>
             <h2 className="font-bold text-gray-800">Delivery Information</h2>
             <div>
@@ -200,7 +200,7 @@ export default function Checkout({ onBack, onSuccess }: Props) {
           </div>
         </div>
 
-        <div className="md:col-span-2">
+        <div className="min-w-0 md:col-span-2">
           <div className="bg-white rounded-2xl p-5 sticky top-24" style={{ boxShadow: '0 2px 16px rgba(0,0,0,0.06)' }}>
             <h2 className="font-bold text-gray-800 mb-3">Order Summary</h2>
             <div className="space-y-2 mb-4 max-h-48 overflow-y-auto">
