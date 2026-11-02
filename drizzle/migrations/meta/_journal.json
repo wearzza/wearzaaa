@@ -29,6 +29,13 @@
       "when": 1793497480127,
       "tag": "0003_sha256_guest_tracking",
       "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "7",
+      "when": 1793585785257,
+      "tag": "0004_enforce_commerce_rules",
+      "breakpoints": true
     }
   ]
 }
