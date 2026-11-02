@@ -30,6 +30,15 @@ describe('Wearza commerce rules', () => {
     expect(canChangeOrderStatus('confirmed', 'delivered')).toBe(true);
     expect(canChangeOrderStatus('delivered', 'pending')).toBe(false);
   });
+  test('processing and confirmed orders advance without skipping confirmation or reopening delivery', () => {
+    expect(canChangeOrderStatus('pending', 'delivered')).toBe(false);
+    expect(canChangeOrderStatus('processing', 'delivered')).toBe(false);
+    expect(canChangeOrderStatus('processing', 'confirmed')).toBe(true);
+    expect(canChangeOrderStatus('confirmed', 'shipped')).toBe(false);
+    expect(canChangeOrderStatus('shipped', 'confirmed')).toBe(false);
+    expect(canChangeOrderStatus('shipped', 'delivered')).toBe(true);
+    expect(canChangeOrderStatus('delivered', 'cancelled')).toBe(false);
+  });
   test('only delivered orders earn commission and paid versus due remains separate', () => {
     expect(earningsSummary([
       { total: 400, status: 'delivered', commission_paid: false },

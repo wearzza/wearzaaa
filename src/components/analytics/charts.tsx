@@ -38,13 +38,13 @@ function Sparkline({ data, color }: { data: number[]; color: string }) {
 export function KpiCard({ label, value, context, icon: Icon, delta, spark, color = 'var(--chart-1)' }: { label: string; value: string; context?: string; icon: LucideIcon; delta?: number | null; spark?: number[]; color?: string }) {
   return <section className="dash-panel min-w-0 flex flex-col">
     <div className="flex items-center justify-between gap-2">
-      <span className="text-xs font-semibold text-muted-foreground truncate">{label}</span>
+      <span className="min-w-0 text-xs font-semibold text-muted-foreground break-words">{label}</span>
       <span className="w-8 h-8 rounded-lg grid place-items-center shrink-0" style={{ background: `color-mix(in srgb, ${color} 14%, transparent)`, color }}><Icon size={16} /></span>
     </div>
     <div className="text-xl md:text-2xl font-extrabold text-foreground mt-2 break-words tracking-tight">{value}</div>
     <div className="flex items-center gap-1.5 text-xs mt-1 min-h-4">
       {delta !== undefined && delta !== null && <span className={`inline-flex items-center font-bold rounded-full px-1.5 py-0.5 ${delta >= 0 ? 'text-chart-green bg-chart-green/10' : 'text-destructive bg-destructive/10'}`}>{delta >= 0 ? <ArrowUpRight size={12} /> : <ArrowDownRight size={12} />}{Math.abs(delta).toFixed(0)}%</span>}
-      {context && <span className="text-muted-foreground truncate">{context}</span>}
+      {context && <span className="min-w-0 text-muted-foreground break-words">{context}</span>}
     </div>
     {spark && <div className="mt-auto pt-2"><Sparkline data={spark} color={color} /></div>}
   </section>;

@@ -20,3 +20,4 @@
 - Guest order tracking uses device-held random capability tokens with SHA-256 hashes, never a phone-only global order listing; customer cancellation must validate the token and current status atomically.
 - Keep seller policy content versioned in one shared source used by signup and the seller policy view; new registrations record self-delivery and refund-policy acceptance.
 - Use shared Button and native Dialog controls for new commerce interactions so keyboard focus and styling stay consistent.
+- Keep Bun test globals out of the browser TypeScript configuration and exclude test files from its compilation, because Bun's fetch extensions conflict with browser-only client code.
