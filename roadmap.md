@@ -1,3 +1,4 @@
+- [ ] Fix reported build/loading errors and finish previously unsuccessful work.
 - [ ] Set existing and new seller commission to 10% with earnings breakdowns.
 - [ ] Add processing status and reason-based customer cancellation before confirmation only.
 - [ ] Shorten seller shop links and improve seller overview.
