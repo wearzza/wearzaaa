@@ -1,7 +1,7 @@
-- [ ] Fix reported build/loading errors and finish previously unsuccessful work.
-- [ ] Set existing and new seller commission to 10% with earnings breakdowns.
-- [ ] Add processing status and reason-based customer cancellation before confirmation only.
-- [ ] Shorten seller shop links and improve seller overview.
-- [ ] Strengthen visible seller rules and signup acceptance.
-- [ ] Add per-seller sales and earnings overview in admin.
-- [ ] Verify order rules and customer/seller/admin flows on phone and desktop.
+- [x] Fix reported build/loading errors and finish previously unsuccessful work.
+- [x] Set existing and new seller commission to 10% with earnings breakdowns.
+- [x] Add processing status and reason-based customer cancellation before confirmation only.
+- [x] Shorten seller shop links and improve seller overview; show links immediately after signup.
+- [x] Strengthen visible seller rules and signup acceptance.
+- [x] Add per-seller sales and earnings overview in admin.
+- [x] Verify order rules and customer/seller/admin flows on phone and desktop, including saved signup, Ban and Reject.
