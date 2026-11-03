@@ -621,6 +621,10 @@ export type Database = {
         }
         Returns: Json
       }
+      wearza_find_order: {
+        Args: { _order_number: string; _phone: string }
+        Returns: Json
+      }
       wearza_make_slug: {
         Args: { _id: string; _name: string }
         Returns: string
