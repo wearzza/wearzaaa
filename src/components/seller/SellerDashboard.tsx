@@ -9,6 +9,7 @@ import ShopLinkCard from './ShopLinkCard';
 import { useCategories, refreshCategories, slugify } from '../../lib/catalog';
 import { canChangeOrderStatus, cancellationLabel, orderEarnings, ORDER_STATUSES, statusLabel } from '../../lib/commerce';
 import CancelOrderDialog from '../CancelOrderDialog';
+import { OrderSearch, OrderTimeline } from '../OrderDetails';
 import SellerRules from './SellerRules';
 import Button from '../ui/Button';
 
@@ -344,6 +345,7 @@ function OrdersTab({ seller }: { seller: Seller }) {
   return (
     <div>
       <h1 className="text-2xl font-black text-gray-900 mb-6">Orders</h1>
+      <OrderSearch onSearch={async n => { const { data } = await supabase.from('orders').select('*, order_items(*)').eq('seller_id', seller.id).eq('order_number', n).maybeSingle(); if (!data) return 'No order with that number in your shop.'; setSelectedOrder(data as Order); return null; }} />
       {statusError && <p role="alert" className="text-destructive text-sm mb-4">{statusError}</p>}
       {loading ? <div className="text-center py-10 text-gray-400">Loading...</div> : orders.length === 0 ? (
         <div className="text-center py-20 bg-white rounded-2xl" style={{ boxShadow: '0 2px 12px rgba(0,0,0,0.05)' }}><ShoppingBag size={48} className="mx-auto text-gray-200 mb-4" /><p className="text-gray-500 font-medium">No orders yet</p></div>
@@ -397,6 +399,8 @@ function OrdersTab({ seller }: { seller: Seller }) {
               <div><p className="text-xs text-gray-400">Order #</p><p className="font-bold text-gray-800">{selectedOrder.order_number}</p></div>
               <span className="text-xs font-bold px-3 py-1 rounded-full" style={{ background: colors[selectedOrder.status] + '15', color: colors[selectedOrder.status] }}>{selectedOrder.status}</span>
             </div>
+            <div className="mb-4 pb-4 border-b border-gray-100"><h3 className="font-bold text-sm text-gray-800 mb-2">Order Timing</h3><OrderTimeline order={selectedOrder} /></div>
+
 
             <div className="mb-4 pb-4 border-b border-gray-100">
               <h3 className="font-bold text-sm text-gray-800 mb-2">Customer Information</h3>
