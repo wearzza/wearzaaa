@@ -43,6 +43,13 @@
       "when": 1793697614228,
       "tag": "0005_unique_order_numbers",
       "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "7",
+      "when": 1793697902323,
+      "tag": "0006_track_order_by_number",
+      "breakpoints": true
     }
   ]
 }

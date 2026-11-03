@@ -46,9 +46,22 @@ export default function OrdersPage({ onHome }: { onHome: () => void }) {
     setNotice('Items added to your cart. Open the cart to place a new order.');
     window.scrollTo({ top: 0, behavior: 'smooth' });
   }
-  const filtered = orders.filter(o => filter === 'all' || (filter === 'active' ? o.status !== 'delivered' && o.status !== 'cancelled' : o.status === filter));
+  const [lookup, setLookup] = useState({ number: '', phone: '' });
+  const [found, setFound] = useState<Order[]>(() => { try { return JSON.parse(sessionStorage.getItem('wearza_found_orders') || '[]'); } catch { return []; } });
+  async function findOrder(e: React.FormEvent) {
+    e.preventDefault(); setError(''); setNotice('');
+    const { data, error } = await supabase.rpc('wearza_find_order', { _order_number: lookup.number.replace(/^#/, ''), _phone: lookup.phone });
+    if (error || !data) { setError('No order found. Check the order number and phone number.'); return; }
+    const o = data as unknown as Order;
+    const next = [o, ...found.filter(f => f.id !== o.id)];
+    setFound(next); sessionStorage.setItem('wearza_found_orders', JSON.stringify(next));
+    setNotice(`Order #${o.order_number} found.`);
+  }
+  const all = [...orders, ...found.filter(f => !orders.some(o => o.id === f.id))];
+  const filtered = all.filter(o => filter === 'all' || (filter === 'active' ? o.status !== 'delivered' && o.status !== 'cancelled' : o.status === filter));
   return <div className="max-w-3xl mx-auto px-4 py-6 text-foreground">
     <header className="flex items-center justify-between gap-3 mb-5"><h1 className="text-2xl font-black">My Orders</h1><Button variant="outline" aria-label="Refresh orders" title="Refresh orders" onClick={load} className="w-9 h-9 p-0"><RefreshCw size={16} /></Button></header>
+    <form onSubmit={findOrder} className="bg-card border border-border rounded-lg p-4 mb-5"><h2 className="font-bold text-sm mb-1">Track an order</h2><p className="text-xs text-muted-foreground mb-3">Orders placed on this device appear automatically. On another device, enter your order number and phone number.</p><div className="grid sm:grid-cols-[1fr_1fr_auto] gap-2"><input required value={lookup.number} onChange={e => setLookup({ ...lookup, number: e.target.value })} placeholder="Order number e.g. WZ-261103-AB12CD" aria-label="Order number" className="min-w-0 px-3 py-2 rounded-md border border-border bg-background text-sm uppercase" /><input required type="tel" value={lookup.phone} onChange={e => setLookup({ ...lookup, phone: e.target.value })} placeholder="Phone used at checkout" aria-label="Phone number" className="min-w-0 px-3 py-2 rounded-md border border-border bg-background text-sm" /><Button type="submit">Track</Button></div></form>
     <div className="flex gap-2 overflow-x-auto mb-5" aria-label="Order filters">{['all', 'active', 'delivered', 'cancelled'].map(f => <Button key={f} variant={f === filter ? 'primary' : 'outline'} onClick={() => setFilter(f)} aria-pressed={f === filter} className="capitalize shrink-0">{f}</Button>)}</div>
     {error && <p role="alert" className="mb-4 text-destructive text-sm">{error}</p>}
     {notice && <p role="status" className="mb-4 p-3 bg-chart-green/10 border border-chart-green/30 rounded-md text-sm">{notice}</p>}
