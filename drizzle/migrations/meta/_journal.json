@@ -36,6 +36,13 @@
       "when": 1793585785257,
       "tag": "0004_enforce_commerce_rules",
       "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "7",
+      "when": 1793697614228,
+      "tag": "0005_unique_order_numbers",
+      "breakpoints": true
     }
   ]
 }

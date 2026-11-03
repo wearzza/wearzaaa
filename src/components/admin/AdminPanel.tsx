@@ -5,6 +5,7 @@ import AnalyticsOverview from './AnalyticsOverview';
 import CategoriesTab from './CategoriesTab';
 import Button from '../ui/Button';
 import { cancellationLabel } from '../../lib/commerce';
+import { OrderDetailsDialog, OrderSearch } from '../OrderDetails';
 import { Shield, Store, ShoppingBag, Tag, BarChart3, Bell, LogOut, Check, X, Ban, Image, Plus, Edit, Trash2, Upload } from 'lucide-react';
 
 type Tab = 'analytics' | 'sellers' | 'categories' | 'orders' | 'promos' | 'banners' | 'notifications';
@@ -228,6 +229,7 @@ function SellersTab({ onSalesOverview }: { onSalesOverview: (id: string) => void
 
 function OrdersTab() {
   const [orders, setOrders] = useState<Order[]>([]);
+  const [viewing, setViewing] = useState<Order | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -244,6 +246,8 @@ function OrdersTab() {
   return (
     <div>
       <h1 className="text-2xl font-black text-gray-900 mb-6">All Orders (Global)</h1>
+      <OrderSearch onSearch={async n => { const { data } = await supabase.from('orders').select('*, sellers(business_name), order_items(*)').eq('order_number', n).maybeSingle(); if (!data) return 'No order found with that number.'; setViewing(data as Order); return null; }} />
+      {viewing && <OrderDetailsDialog order={viewing} sellerName={(viewing as any).sellers?.business_name} onClose={() => setViewing(null)} />}
       {loading ? <div className="text-center py-10 text-gray-400">Loading...</div> : orders.length === 0 ? (
         <div className="text-center py-20 bg-white rounded-2xl" style={{ boxShadow: '0 2px 12px rgba(0,0,0,0.05)' }}><ShoppingBag size={48} className="mx-auto text-gray-200 mb-4" /><p className="text-gray-500 font-medium">No orders yet</p></div>
       ) : (
@@ -264,9 +268,9 @@ function OrdersTab() {
                   </div>
                 ))}
               </div>
-              <div className="flex items-center justify-between pt-2 border-t border-gray-100">
+              <div className="flex flex-wrap gap-2 items-center justify-between pt-2 border-t border-gray-100">
                 <span className="text-xs text-gray-400">{new Date(o.created_at).toLocaleString()}</span>
-                <span className="font-black" style={{ color: '#ff3b30' }}>Rs. {o.total.toLocaleString()}</span>
+                <div className="flex items-center gap-3"><Button variant="outline" onClick={() => setViewing(o)}>View</Button><span className="font-black" style={{ color: '#ff3b30' }}>Rs. {o.total.toLocaleString()}</span></div>
               </div>
               {o.status === 'cancelled' && <p className="text-xs text-muted-foreground mt-3">Cancelled by {o.cancelled_by || 'seller'} · {cancellationLabel(o.cancellation_reason)}{o.cancellation_details ? ` — ${o.cancellation_details}` : ''}</p>}
             </div>
