@@ -5,6 +5,7 @@ import AnalyticsOverview from './AnalyticsOverview';
 import CategoriesTab from './CategoriesTab';
 import Button from '../ui/Button';
 import { cancellationLabel } from '../../lib/commerce';
+import { OrderDetailsDialog, OrderSearch } from '../OrderDetails';
 import { Shield, Store, ShoppingBag, Tag, BarChart3, Bell, LogOut, Check, X, Ban, Image, Plus, Edit, Trash2, Upload } from 'lucide-react';
 
 type Tab = 'analytics' | 'sellers' | 'categories' | 'orders' | 'promos' | 'banners' | 'notifications';

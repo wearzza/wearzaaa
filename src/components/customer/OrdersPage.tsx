@@ -1,12 +1,14 @@
 import { useEffect, useState } from 'react';
-import { supabase, type Order } from '../../lib/supabase';
-import { Package, Truck, MapPin, RefreshCw, XCircle, CheckCircle } from 'lucide-react';
+import { supabase, type Order, type Product } from '../../lib/supabase';
+import { Package, Truck, MapPin, RefreshCw, XCircle, CheckCircle, ShoppingCart } from 'lucide-react';
 import { canCustomerCancel, cancellationLabel, STATUS_TONE, statusLabel } from '../../lib/commerce';
 import { loadTrackedOrder, readTrackedOrders } from '../../lib/orderTracking';
+import { useCart } from '../../contexts/CartContext';
 import CancelOrderDialog from '../CancelOrderDialog';
 import Button from '../ui/Button';
 
 export default function OrdersPage({ onHome }: { onHome: () => void }) {
+  const { addToCart } = useCart();
   const [orders, setOrders] = useState<Order[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
@@ -36,6 +38,14 @@ export default function OrdersPage({ onHome }: { onHome: () => void }) {
     setOrders(prev => prev.map(order => order.id === selected.id ? data as Order : order));
     setSelected(null); setNotice('Your order was cancelled. No payment is due.');
   }
+  async function orderAgain(order: Order) {
+    const ids = (order.order_items || []).map(i => i.product_id).filter(Boolean) as string[];
+    const { data } = await supabase.from('products').select('*').in('id', ids).eq('is_active', true);
+    if (!data?.length) { setNotice('These products are no longer available.'); return; }
+    order.order_items?.forEach(i => { const p = data.find(d => d.id === i.product_id); if (p) addToCart(p as Product, i.quantity, i.selected_size || undefined); });
+    setNotice('Items added to your cart. Open the cart to place a new order.');
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  }
   const filtered = orders.filter(o => filter === 'all' || (filter === 'active' ? o.status !== 'delivered' && o.status !== 'cancelled' : o.status === filter));
   return <div className="max-w-3xl mx-auto px-4 py-6 text-foreground">
     <header className="flex items-center justify-between gap-3 mb-5"><h1 className="text-2xl font-black">My Orders</h1><Button variant="outline" aria-label="Refresh orders" title="Refresh orders" onClick={load} className="w-9 h-9 p-0"><RefreshCw size={16} /></Button></header>
@@ -48,7 +58,7 @@ export default function OrdersPage({ onHome }: { onHome: () => void }) {
       {order.status !== 'cancelled' && <ol className="grid grid-cols-4 gap-2 mb-4" aria-label="Order progress">{(['pending', 'processing', 'confirmed', 'delivered'] as const).map((s, i) => { const step = order.status === 'shipped' ? 2 : ['pending', 'processing', 'confirmed', 'delivered'].indexOf(order.status); return <li key={s} className={`border-t-2 pt-2 text-[10px] sm:text-xs ${i <= step ? 'border-primary text-foreground' : 'border-border text-muted-foreground'}`}>{statusLabel(s)}</li>; })}</ol>}
       {order.province && <p className="flex gap-2 text-xs text-muted-foreground mb-4"><MapPin size={14} className="shrink-0" />{order.municipality}-{order.ward_number}, {order.district}, {order.province}</p>}
       {order.status === 'cancelled' && <div className="bg-muted p-3 rounded-md text-sm mb-4"><p className="font-semibold flex gap-2 items-center"><XCircle size={15} />Cancelled by {order.cancelled_by || 'seller'}</p><p className="mt-1 text-muted-foreground">{cancellationLabel(order.cancellation_reason)}</p>{order.cancellation_details && <p className="mt-1 break-words text-muted-foreground">{order.cancellation_details}</p>}<p className="text-xs mt-2">No payment due · Cash on Delivery</p></div>}
-      <div className="flex flex-wrap items-center justify-between gap-3 border-t border-border pt-3"><div><p className="text-xs text-muted-foreground">Total</p><strong className="text-primary">Rs. {Number(order.total).toLocaleString()}</strong></div>{canCustomerCancel(order.status) ? <Button variant="outline" onClick={() => setSelected(order)} className="text-destructive"><XCircle size={14} />Cancel order</Button> : <span className="flex items-center gap-1 text-xs text-muted-foreground">{order.status === 'delivered' ? <CheckCircle size={14} /> : <Truck size={14} />}Cash on Delivery</span>}</div>
+      <div className="flex flex-wrap items-center justify-between gap-3 border-t border-border pt-3"><div><p className="text-xs text-muted-foreground">Total</p><strong className="text-primary">Rs. {Number(order.total).toLocaleString()}</strong></div>{canCustomerCancel(order.status) ? <Button variant="outline" onClick={() => setSelected(order)} className="text-destructive"><XCircle size={14} />Cancel order</Button> : order.status === 'cancelled' ? <Button onClick={() => orderAgain(order)}><ShoppingCart size={14} />Order again</Button> : <span className="flex items-center gap-1 text-xs text-muted-foreground">{order.status === 'delivered' ? <CheckCircle size={14} /> : <Truck size={14} />}Cash on Delivery</span>}</div>
       {(order.status === 'confirmed' || order.status === 'shipped') && <p className="text-xs text-muted-foreground mt-3">The seller confirmed your order. Cancellation is now closed.</p>}
     </article>)}</div>}
     {selected && <CancelOrderDialog order={selected} actor="customer" onClose={() => setSelected(null)} onConfirm={cancel} />}
