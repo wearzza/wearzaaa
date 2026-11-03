@@ -46,7 +46,19 @@ export default function OrdersPage({ onHome }: { onHome: () => void }) {
     setNotice('Items added to your cart. Open the cart to place a new order.');
     window.scrollTo({ top: 0, behavior: 'smooth' });
   }
-  const filtered = orders.filter(o => filter === 'all' || (filter === 'active' ? o.status !== 'delivered' && o.status !== 'cancelled' : o.status === filter));
+  const [lookup, setLookup] = useState({ number: '', phone: '' });
+  const [found, setFound] = useState<Order[]>(() => { try { return JSON.parse(sessionStorage.getItem('wearza_found_orders') || '[]'); } catch { return []; } });
+  async function findOrder(e: React.FormEvent) {
+    e.preventDefault(); setError(''); setNotice('');
+    const { data, error } = await supabase.rpc('wearza_find_order', { _order_number: lookup.number.replace(/^#/, ''), _phone: lookup.phone });
+    if (error || !data) { setError('No order found. Check the order number and phone number.'); return; }
+    const o = data as unknown as Order;
+    const next = [o, ...found.filter(f => f.id !== o.id)];
+    setFound(next); sessionStorage.setItem('wearza_found_orders', JSON.stringify(next));
+    setNotice(`Order #${o.order_number} found.`);
+  }
+  const all = [...orders, ...found.filter(f => !orders.some(o => o.id === f.id))];
+  const filtered = all.filter(o => filter === 'all' || (filter === 'active' ? o.status !== 'delivered' && o.status !== 'cancelled' : o.status === filter));
   return <div className="max-w-3xl mx-auto px-4 py-6 text-foreground">
     <header className="flex items-center justify-between gap-3 mb-5"><h1 className="text-2xl font-black">My Orders</h1><Button variant="outline" aria-label="Refresh orders" title="Refresh orders" onClick={load} className="w-9 h-9 p-0"><RefreshCw size={16} /></Button></header>
     <div className="flex gap-2 overflow-x-auto mb-5" aria-label="Order filters">{['all', 'active', 'delivered', 'cancelled'].map(f => <Button key={f} variant={f === filter ? 'primary' : 'outline'} onClick={() => setFilter(f)} aria-pressed={f === filter} className="capitalize shrink-0">{f}</Button>)}</div>
