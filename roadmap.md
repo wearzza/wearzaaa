@@ -7,3 +7,6 @@
 - [x] Verify order rules and customer/seller/admin flows on phone and desktop, including saved signup, Ban and Reject.
 - [x] Finish persistent guest tracking and verify unique order numbers after checkout without signup.
 - [x] Verify seller/admin order details, timeline and order-number search on phone and desktop.
+- [ ] Remove the checkout-phone field from My Orders while keeping saved guest tracking private.
+- [ ] Add admin all-products viewing and Cancel/Reject controls, preserving existing orders.
+- [ ] Verify phone-free tracking and product moderation on desktop and phone.

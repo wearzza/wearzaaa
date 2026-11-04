@@ -42,3 +42,11 @@ export function saveOrderLookup(storage: Pick<Storage, 'getItem' | 'setItem'>, l
 export function canManageGuestOrder(id: string, tracking: TrackedOrder[]) {
   return tracking.some(row => row.id === id && row.token.length >= 32);
 }
+
+export function savedOrderReferences(number: string, tracking: TrackedOrder[], lookups: OrderLookup[]) {
+  const normalized = normalizeOrderNumber(number);
+  return {
+    tracking: tracking.find(row => normalizeOrderNumber(row.number) === normalized),
+    lookup: lookups.find(row => normalizeOrderNumber(row.number) === normalized),
+  };
+}

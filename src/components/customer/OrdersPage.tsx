@@ -3,7 +3,7 @@ import { supabase, type Order, type Product } from '../../lib/supabase';
 import { Package, Truck, MapPin, RefreshCw, XCircle, CheckCircle, ShoppingCart } from 'lucide-react';
 import { canCustomerCancel, cancellationLabel, STATUS_TONE, statusLabel } from '../../lib/commerce';
 import { loadTrackedOrder, loadOrderLookup, readTrackedOrders } from '../../lib/orderTracking';
-import { canManageGuestOrder, readOrderLookups, saveOrderLookup, normalizeOrderNumber } from '../../lib/guestOrderStorage';
+import { canManageGuestOrder, readOrderLookups, savedOrderReferences } from '../../lib/guestOrderStorage';
 import { useCart } from '../../contexts/CartContext';
 import CancelOrderDialog from '../CancelOrderDialog';
 import Button from '../ui/Button';
@@ -16,7 +16,7 @@ export default function OrdersPage({ onHome }: { onHome: () => void }) {
   const [notice, setNotice] = useState('');
   const [selected, setSelected] = useState<Order | null>(null);
   const [filter, setFilter] = useState('all');
-  const [lookup, setLookup] = useState({ number: '', phone: '' });
+  const [lookupNumber, setLookupNumber] = useState('');
   const [finding, setFinding] = useState(false);
   const [found, setFound] = useState<Order[]>([]);
   async function load() {
@@ -62,12 +62,12 @@ export default function OrdersPage({ onHome }: { onHome: () => void }) {
     if (finding) return;
     setError(''); setNotice(''); setFinding(true);
     try {
-      const normalized = { number: normalizeOrderNumber(lookup.number), phone: lookup.phone.trim() };
-      const order = await loadOrderLookup(normalized);
-      if (!order) { setError('No order found. Check the order number and phone number.'); return; }
-      setFound(prev => [order, ...prev.filter(row => row.id !== order.id)]);
-      try { saveOrderLookup(localStorage, normalized); }
-      catch { setError('Tracking is available, but this browser could not remember it. Keep your order number.'); }
+      const saved = savedOrderReferences(lookupNumber, readTrackedOrders(), readOrderLookups(localStorage));
+      if (!saved.tracking && !saved.lookup) { setError('This order is not saved on this device. Use the device where you placed or saved the order.'); return; }
+      const order = saved.tracking ? await loadTrackedOrder(saved.tracking) : saved.lookup ? await loadOrderLookup(saved.lookup) : null;
+      if (!order) { setError('No order found. Check the saved order number.'); return; }
+      if (saved.tracking) setOrders(prev => [order, ...prev.filter(row => row.id !== order.id)]);
+      else setFound(prev => [order, ...prev.filter(row => row.id !== order.id)]);
       setNotice(`Order #${order.order_number} found.`);
     } catch { setError('Could not track this order. Please try again.'); }
     finally { setFinding(false); }
@@ -76,7 +76,7 @@ export default function OrdersPage({ onHome }: { onHome: () => void }) {
   const filtered = all.filter(o => filter === 'all' || (filter === 'active' ? o.status !== 'delivered' && o.status !== 'cancelled' : o.status === filter));
   return <div className="max-w-3xl mx-auto px-4 py-6 text-foreground">
     <header className="flex items-center justify-between gap-3 mb-5"><h1 className="text-2xl font-black">My Orders</h1><Button variant="outline" aria-label="Refresh orders" title="Refresh orders" onClick={load} className="w-9 h-9 p-0"><RefreshCw size={16} /></Button></header>
-    <form onSubmit={findOrder} className="bg-card border border-border rounded-lg p-4 mb-5"><h2 className="font-bold text-sm mb-3">Track an order</h2><div className="grid sm:grid-cols-[1fr_1fr_auto] gap-2"><input required value={lookup.number} onChange={e => setLookup({ ...lookup, number: e.target.value })} placeholder="Order number e.g. WZ-261103-AB12CD" aria-label="Order number" className="min-w-0 px-3 py-2 rounded-md border border-border bg-background text-sm uppercase" /><input required type="tel" value={lookup.phone} onChange={e => setLookup({ ...lookup, phone: e.target.value })} placeholder="Phone used at checkout" aria-label="Phone number" className="min-w-0 px-3 py-2 rounded-md border border-border bg-background text-sm" /><Button type="submit" disabled={finding}>{finding ? 'Tracking…' : 'Track'}</Button></div></form>
+    <form onSubmit={findOrder} className="mb-5"><h2 className="font-bold text-sm mb-3">Track an order</h2><div className="grid grid-cols-[minmax(0,1fr)_auto] gap-2"><input required value={lookupNumber} onChange={e => setLookupNumber(e.target.value)} placeholder="Order number e.g. WZ-261103-AB12CD" aria-label="Order number" className="min-w-0 px-3 py-2 rounded-md border border-border bg-background text-sm uppercase" /><Button type="submit" disabled={finding}>{finding ? 'Tracking…' : 'Track'}</Button></div></form>
     <div className="flex gap-2 overflow-x-auto mb-5" aria-label="Order filters">{['all', 'active', 'delivered', 'cancelled'].map(f => <Button key={f} variant={f === filter ? 'primary' : 'outline'} onClick={() => setFilter(f)} aria-pressed={f === filter} className="capitalize shrink-0">{f}</Button>)}</div>
     {error && <p role="alert" className="mb-4 text-destructive text-sm">{error}</p>}
     {notice && <p role="status" className="mb-4 p-3 bg-chart-green/10 border border-chart-green/30 rounded-md text-sm">{notice}</p>}
