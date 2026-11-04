@@ -5,5 +5,5 @@
 - [x] Strengthen visible seller rules and signup acceptance.
 - [x] Add per-seller sales and earnings overview in admin.
 - [x] Verify order rules and customer/seller/admin flows on phone and desktop, including saved signup, Ban and Reject.
-- [ ] Finish persistent guest tracking and verify unique order numbers after checkout without signup.
-- [ ] Verify seller/admin order details, timeline and order-number search on phone and desktop.
+- [x] Finish persistent guest tracking and verify unique order numbers after checkout without signup.
+- [x] Verify seller/admin order details, timeline and order-number search on phone and desktop.
