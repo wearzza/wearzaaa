@@ -23,3 +23,5 @@
 - Keep Bun test globals out of the browser TypeScript configuration and exclude test files from its compilation, because Bun's fetch extensions conflict with browser-only client code.
 - Keep validated guest tracking storage in `guestOrderStorage.ts`; re-fetch saved lookup references instead of caching order snapshots so reopened My Orders stays current without granting cancellation access.
 - Reuse `OrderDetailsDialog` and `OrderSearch` in seller/admin order views, and record processing timestamps in a database trigger so both timelines reflect saved events.
+- Phone-free customer order searches must use a locally saved capability or verified lookup reference, never an unrestricted order-number query, to keep guest details private.
+- Keep all-shop product management in a separate admin ProductsTab; Cancel and Reject hide listings through `is_active` without deleting order history, and seller edits preserve the saved visibility flag.

@@ -1,5 +1,5 @@
 import { describe, expect, test } from 'bun:test';
-import { canManageGuestOrder, normalizeOrderNumber, ORDER_LOOKUPS_KEY, readGuestOrders, readOrderLookups, saveGuestOrder, saveOrderLookup, TRACKED_ORDERS_KEY } from './guestOrderStorage';
+import { canManageGuestOrder, normalizeOrderNumber, ORDER_LOOKUPS_KEY, readGuestOrders, readOrderLookups, savedOrderReferences, saveGuestOrder, saveOrderLookup, TRACKED_ORDERS_KEY } from './guestOrderStorage';
 
 function deviceStorage() {
   const values = new Map<string, string>();
@@ -36,5 +36,11 @@ describe('Guest orders without signup', () => {
   });
   test('pasted order numbers support spaces, a hash and lowercase', () => {
     expect(normalizeOrderNumber('  # wz-261104-a1b2c3 ')).toBe('WZ-261104-A1B2C3');
+  });
+  test('phone-free order search uses only a reference already saved on this device', () => {
+    const tracking = [{ id: 'one', number: 'WZ-261104-A1B2C3', token: 'a'.repeat(64) }];
+    expect(savedOrderReferences(' #wz-261104-a1b2c3 ', tracking, []).tracking).toEqual(tracking[0]);
+    expect(savedOrderReferences('WZ-261104-D4E5F6', tracking, [])).toEqual({ tracking: undefined, lookup: undefined });
+    expect(savedOrderReferences('WZ-261104-D4E5F6', [], [{ number: 'WZ-261104-D4E5F6', phone: '9800000000' }]).lookup?.number).toBe('WZ-261104-D4E5F6');
   });
 });

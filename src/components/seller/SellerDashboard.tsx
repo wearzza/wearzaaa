@@ -12,6 +12,7 @@ import CancelOrderDialog from '../CancelOrderDialog';
 import { OrderSearch, OrderDetailsDialog } from '../OrderDetails';
 import SellerRules from './SellerRules';
 import Button from '../ui/Button';
+import { listingActiveOnSave } from '../../lib/productListing';
 
 type Tab = 'overview' | 'products' | 'orders' | 'promos' | 'reviews' | 'notifications' | 'branding' | 'settings' | 'rules';
 
@@ -181,7 +182,7 @@ function ProductsTab({ seller }: { seller: Seller }) {
       seller_id: seller.id, name: form.name, description: form.description || null, category: primaryCat,
       categories: form.categories,
       real_price: +form.real_price, cut_price: form.cut_price ? +form.cut_price : null, stock: +form.stock || 1,
-      image_urls: imageUrls, video_url: form.video_url || null, video_data: videoData || null, is_active: true,
+      image_urls: imageUrls, video_url: form.video_url || null, video_data: videoData || null, is_active: listingActiveOnSave(editing),
     };
     if (editing) await supabase.from('products').update(payload).eq('id', editing.id);
     else await supabase.from('products').insert(payload);
@@ -224,6 +225,7 @@ function ProductsTab({ seller }: { seller: Seller }) {
               </div>
               <div className="p-3">
                 <p className="text-sm font-bold text-gray-800 line-clamp-1">{p.name}</p>
+                {!p.is_active && <p className="text-xs font-semibold text-destructive mt-1">Unavailable</p>}
                 <div className="flex flex-wrap gap-1 mt-1">
                   {(p.categories && p.categories.length > 0 ? p.categories : [p.category]).map((c: string) => (
                     <span key={c} className="text-[10px] font-medium px-1.5 py-0.5 rounded-full bg-gray-100 text-gray-500 capitalize">{c.replace('_', ' ')}</span>
