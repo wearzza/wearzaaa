@@ -2,7 +2,8 @@ import { useEffect, useState } from 'react';
 import { supabase, type Order, type Product } from '../../lib/supabase';
 import { Package, Truck, MapPin, RefreshCw, XCircle, CheckCircle, ShoppingCart } from 'lucide-react';
 import { canCustomerCancel, cancellationLabel, STATUS_TONE, statusLabel } from '../../lib/commerce';
-import { loadTrackedOrder, readTrackedOrders } from '../../lib/orderTracking';
+import { loadTrackedOrder, loadOrderLookup, readTrackedOrders } from '../../lib/orderTracking';
+import { canManageGuestOrder, readOrderLookups, saveOrderLookup, normalizeOrderNumber } from '../../lib/guestOrderStorage';
 import { useCart } from '../../contexts/CartContext';
 import CancelOrderDialog from '../CancelOrderDialog';
 import Button from '../ui/Button';
@@ -15,11 +16,21 @@ export default function OrdersPage({ onHome }: { onHome: () => void }) {
   const [notice, setNotice] = useState('');
   const [selected, setSelected] = useState<Order | null>(null);
   const [filter, setFilter] = useState('all');
+  const [lookup, setLookup] = useState({ number: '', phone: '' });
+  const [finding, setFinding] = useState(false);
+  const [found, setFound] = useState<Order[]>([]);
   async function load() {
     setError('');
     try {
-      const results = await Promise.all(readTrackedOrders().map(loadTrackedOrder));
-      setOrders(results.filter((r): r is Order => r !== null).sort((a, b) => +new Date(b.created_at) - +new Date(a.created_at)));
+      const [tracked, lookedUp] = await Promise.all([
+        Promise.allSettled(readTrackedOrders().map(loadTrackedOrder)),
+        Promise.allSettled(readOrderLookups(localStorage).map(loadOrderLookup)),
+      ]);
+      const results = tracked.flatMap(result => result.status === 'fulfilled' && result.value ? [result.value] : []);
+      const recovered = lookedUp.flatMap(result => result.status === 'fulfilled' && result.value ? [result.value] : []);
+      setOrders(prev => [...results, ...prev.filter(order => !results.some(r => r.id === order.id) && tracked.some(r => r.status === 'rejected'))].sort((a, b) => +new Date(b.created_at) - +new Date(a.created_at)));
+      setFound(prev => [...recovered, ...prev.filter(order => !recovered.some(r => r.id === order.id) && lookedUp.some(r => r.status === 'rejected'))]);
+      if ([...tracked, ...lookedUp].some(result => result.status === 'rejected')) setError('Some orders could not refresh. Please try again.');
     } catch { setError('Could not load your orders. Please try again.'); }
     finally { setLoading(false); }
   }
@@ -46,22 +57,26 @@ export default function OrdersPage({ onHome }: { onHome: () => void }) {
     setNotice('Items added to your cart. Open the cart to place a new order.');
     window.scrollTo({ top: 0, behavior: 'smooth' });
   }
-  const [lookup, setLookup] = useState({ number: '', phone: '' });
-  const [found, setFound] = useState<Order[]>(() => { try { return JSON.parse(sessionStorage.getItem('wearza_found_orders') || '[]'); } catch { return []; } });
   async function findOrder(e: React.FormEvent) {
-    e.preventDefault(); setError(''); setNotice('');
-    const { data, error } = await supabase.rpc('wearza_find_order', { _order_number: lookup.number.replace(/^#/, ''), _phone: lookup.phone });
-    if (error || !data) { setError('No order found. Check the order number and phone number.'); return; }
-    const o = data as unknown as Order;
-    const next = [o, ...found.filter(f => f.id !== o.id)];
-    setFound(next); sessionStorage.setItem('wearza_found_orders', JSON.stringify(next));
-    setNotice(`Order #${o.order_number} found.`);
+    e.preventDefault();
+    if (finding) return;
+    setError(''); setNotice(''); setFinding(true);
+    try {
+      const normalized = { number: normalizeOrderNumber(lookup.number), phone: lookup.phone.trim() };
+      const order = await loadOrderLookup(normalized);
+      if (!order) { setError('No order found. Check the order number and phone number.'); return; }
+      setFound(prev => [order, ...prev.filter(row => row.id !== order.id)]);
+      try { saveOrderLookup(localStorage, normalized); }
+      catch { setError('Tracking is available, but this browser could not remember it. Keep your order number.'); }
+      setNotice(`Order #${order.order_number} found.`);
+    } catch { setError('Could not track this order. Please try again.'); }
+    finally { setFinding(false); }
   }
   const all = [...orders, ...found.filter(f => !orders.some(o => o.id === f.id))];
   const filtered = all.filter(o => filter === 'all' || (filter === 'active' ? o.status !== 'delivered' && o.status !== 'cancelled' : o.status === filter));
   return <div className="max-w-3xl mx-auto px-4 py-6 text-foreground">
     <header className="flex items-center justify-between gap-3 mb-5"><h1 className="text-2xl font-black">My Orders</h1><Button variant="outline" aria-label="Refresh orders" title="Refresh orders" onClick={load} className="w-9 h-9 p-0"><RefreshCw size={16} /></Button></header>
-    <form onSubmit={findOrder} className="bg-card border border-border rounded-lg p-4 mb-5"><h2 className="font-bold text-sm mb-1">Track an order</h2><p className="text-xs text-muted-foreground mb-3">Orders placed on this device appear automatically. On another device, enter your order number and phone number.</p><div className="grid sm:grid-cols-[1fr_1fr_auto] gap-2"><input required value={lookup.number} onChange={e => setLookup({ ...lookup, number: e.target.value })} placeholder="Order number e.g. WZ-261103-AB12CD" aria-label="Order number" className="min-w-0 px-3 py-2 rounded-md border border-border bg-background text-sm uppercase" /><input required type="tel" value={lookup.phone} onChange={e => setLookup({ ...lookup, phone: e.target.value })} placeholder="Phone used at checkout" aria-label="Phone number" className="min-w-0 px-3 py-2 rounded-md border border-border bg-background text-sm" /><Button type="submit">Track</Button></div></form>
+    <form onSubmit={findOrder} className="bg-card border border-border rounded-lg p-4 mb-5"><h2 className="font-bold text-sm mb-3">Track an order</h2><div className="grid sm:grid-cols-[1fr_1fr_auto] gap-2"><input required value={lookup.number} onChange={e => setLookup({ ...lookup, number: e.target.value })} placeholder="Order number e.g. WZ-261103-AB12CD" aria-label="Order number" className="min-w-0 px-3 py-2 rounded-md border border-border bg-background text-sm uppercase" /><input required type="tel" value={lookup.phone} onChange={e => setLookup({ ...lookup, phone: e.target.value })} placeholder="Phone used at checkout" aria-label="Phone number" className="min-w-0 px-3 py-2 rounded-md border border-border bg-background text-sm" /><Button type="submit" disabled={finding}>{finding ? 'Tracking…' : 'Track'}</Button></div></form>
     <div className="flex gap-2 overflow-x-auto mb-5" aria-label="Order filters">{['all', 'active', 'delivered', 'cancelled'].map(f => <Button key={f} variant={f === filter ? 'primary' : 'outline'} onClick={() => setFilter(f)} aria-pressed={f === filter} className="capitalize shrink-0">{f}</Button>)}</div>
     {error && <p role="alert" className="mb-4 text-destructive text-sm">{error}</p>}
     {notice && <p role="status" className="mb-4 p-3 bg-chart-green/10 border border-chart-green/30 rounded-md text-sm">{notice}</p>}
@@ -71,7 +86,8 @@ export default function OrdersPage({ onHome }: { onHome: () => void }) {
       {order.status !== 'cancelled' && <ol className="grid grid-cols-4 gap-2 mb-4" aria-label="Order progress">{(['pending', 'processing', 'confirmed', 'delivered'] as const).map((s, i) => { const step = order.status === 'shipped' ? 2 : ['pending', 'processing', 'confirmed', 'delivered'].indexOf(order.status); return <li key={s} className={`border-t-2 pt-2 text-[10px] sm:text-xs ${i <= step ? 'border-primary text-foreground' : 'border-border text-muted-foreground'}`}>{statusLabel(s)}</li>; })}</ol>}
       {order.province && <p className="flex gap-2 text-xs text-muted-foreground mb-4"><MapPin size={14} className="shrink-0" />{order.municipality}-{order.ward_number}, {order.district}, {order.province}</p>}
       {order.status === 'cancelled' && <div className="bg-muted p-3 rounded-md text-sm mb-4"><p className="font-semibold flex gap-2 items-center"><XCircle size={15} />Cancelled by {order.cancelled_by || 'seller'}</p><p className="mt-1 text-muted-foreground">{cancellationLabel(order.cancellation_reason)}</p>{order.cancellation_details && <p className="mt-1 break-words text-muted-foreground">{order.cancellation_details}</p>}<p className="text-xs mt-2">No payment due · Cash on Delivery</p></div>}
-      <div className="flex flex-wrap items-center justify-between gap-3 border-t border-border pt-3"><div><p className="text-xs text-muted-foreground">Total</p><strong className="text-primary">Rs. {Number(order.total).toLocaleString()}</strong></div>{canCustomerCancel(order.status) ? <Button variant="outline" onClick={() => setSelected(order)} className="text-destructive"><XCircle size={14} />Cancel order</Button> : order.status === 'cancelled' ? <Button onClick={() => orderAgain(order)}><ShoppingCart size={14} />Order again</Button> : <span className="flex items-center gap-1 text-xs text-muted-foreground">{order.status === 'delivered' ? <CheckCircle size={14} /> : <Truck size={14} />}Cash on Delivery</span>}</div>
+      <div className="flex flex-wrap items-center justify-between gap-3 border-t border-border pt-3"><div><p className="text-xs text-muted-foreground">Total</p><strong className="text-primary">Rs. {Number(order.total).toLocaleString()}</strong></div>{canCustomerCancel(order.status) && canManageGuestOrder(order.id, readTrackedOrders()) ? <Button variant="outline" onClick={() => setSelected(order)} className="text-destructive"><XCircle size={14} />Cancel order</Button> : order.status === 'cancelled' ? <Button onClick={() => orderAgain(order)}><ShoppingCart size={14} />Order again</Button> : <span className="flex items-center gap-1 text-xs text-muted-foreground">{order.status === 'delivered' ? <CheckCircle size={14} /> : <Truck size={14} />}Cash on Delivery</span>}</div>
+      {canCustomerCancel(order.status) && !canManageGuestOrder(order.id, readTrackedOrders()) && <p className="text-xs text-muted-foreground mt-3">To cancel, use the device you placed this order on.</p>}
       {(order.status === 'confirmed' || order.status === 'shipped') && <p className="text-xs text-muted-foreground mt-3">The seller confirmed your order. Cancellation is now closed.</p>}
     </article>)}</div>}
     {selected && <CancelOrderDialog order={selected} actor="customer" onClose={() => setSelected(null)} onConfirm={cancel} />}

@@ -50,6 +50,13 @@
       "when": 1793697902323,
       "tag": "0006_track_order_by_number",
       "breakpoints": true
+    },
+    {
+      "idx": 7,
+      "version": "7",
+      "when": 1793769781997,
+      "tag": "0007_finish_order_timing_and_private_tracking",
+      "breakpoints": true
     }
   ]
 }

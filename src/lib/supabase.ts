@@ -111,6 +111,7 @@ export interface Order {
   cancellation_details?: string;
   cancelled_by?: 'customer' | 'seller';
   cancelled_at?: string;
+  processing_at?: string;
   confirmed_at?: string;
   delivered_at?: string;
   created_at: string;

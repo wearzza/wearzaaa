@@ -221,6 +221,7 @@ export type Database = {
           notes: string | null
           order_number: string
           payment_method: string
+          processing_at: string | null
           promo_code: string | null
           promo_discount: number
           province: string | null
@@ -252,6 +253,7 @@ export type Database = {
           notes?: string | null
           order_number?: string
           payment_method?: string
+          processing_at?: string | null
           promo_code?: string | null
           promo_discount?: number
           province?: string | null
@@ -283,6 +285,7 @@ export type Database = {
           notes?: string | null
           order_number?: string
           payment_method?: string
+          processing_at?: string | null
           promo_code?: string | null
           promo_discount?: number
           province?: string | null
