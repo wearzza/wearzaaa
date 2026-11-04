@@ -1,18 +1,19 @@
 import { supabase, type Order } from './supabase';
-
-export type TrackedOrder = { id: string; token: string; number: string };
-const KEY = 'wearza_tracked_orders';
+import { readGuestOrders, saveGuestOrder, type TrackedOrder, type OrderLookup, normalizeOrderNumber } from './guestOrderStorage';
+export type { TrackedOrder } from './guestOrderStorage';
 export function readTrackedOrders(): TrackedOrder[] {
-  try {
-    const parsed: unknown = JSON.parse(localStorage.getItem(KEY) || '[]');
-    return Array.isArray(parsed) ? parsed.filter((r): r is TrackedOrder => r && typeof r.id === 'string' && typeof r.token === 'string' && typeof r.number === 'string') : [];
-  } catch { return []; }
+  try { return readGuestOrders(localStorage); } catch { return []; }
 }
 export function saveTrackedOrder(order: TrackedOrder) {
-  localStorage.setItem(KEY, JSON.stringify([order, ...readTrackedOrders().filter(r => r.id !== order.id)]));
+  saveGuestOrder(localStorage, order);
 }
 export async function loadTrackedOrder(tracking: TrackedOrder): Promise<Order | null> {
   const { data, error } = await supabase.rpc('wearza_tracked_order', { _order_id: tracking.id, _token: tracking.token });
+  if (error) throw error;
+  return data as Order | null;
+}
+export async function loadOrderLookup(lookup: OrderLookup): Promise<Order | null> {
+  const { data, error } = await supabase.rpc('wearza_find_order', { _order_number: normalizeOrderNumber(lookup.number), _phone: lookup.phone });
   if (error) throw error;
   return data as Order | null;
 }
