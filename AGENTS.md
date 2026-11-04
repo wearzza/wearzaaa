@@ -21,3 +21,5 @@
 - Keep seller policy content versioned in one shared source used by signup and the seller policy view; new registrations record self-delivery and refund-policy acceptance.
 - Use shared Button and native Dialog controls for new commerce interactions so keyboard focus and styling stay consistent.
 - Keep Bun test globals out of the browser TypeScript configuration and exclude test files from its compilation, because Bun's fetch extensions conflict with browser-only client code.
+- Keep validated guest tracking storage in `guestOrderStorage.ts`; re-fetch saved lookup references instead of caching order snapshots so reopened My Orders stays current without granting cancellation access.
+- Reuse `OrderDetailsDialog` and `OrderSearch` in seller/admin order views, and record processing timestamps in a database trigger so both timelines reflect saved events.

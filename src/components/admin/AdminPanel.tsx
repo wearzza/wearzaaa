@@ -246,7 +246,7 @@ function OrdersTab() {
   return (
     <div>
       <h1 className="text-2xl font-black text-gray-900 mb-6">All Orders (Global)</h1>
-      <OrderSearch onSearch={async n => { const { data } = await supabase.from('orders').select('*, sellers(business_name), order_items(*)').eq('order_number', n).maybeSingle(); if (!data) return 'No order found with that number.'; setViewing(data as Order); return null; }} />
+      <OrderSearch onSearch={async n => { const { data, error } = await supabase.from('orders').select('*, sellers(business_name), order_items(*)').eq('order_number', n).maybeSingle(); if (error) throw error; if (!data) return 'No order found with that number.'; setViewing(data as Order); return null; }} />
       {viewing && <OrderDetailsDialog order={viewing} sellerName={(viewing as any).sellers?.business_name} onClose={() => setViewing(null)} />}
       {loading ? <div className="text-center py-10 text-gray-400">Loading...</div> : orders.length === 0 ? (
         <div className="text-center py-20 bg-white rounded-2xl" style={{ boxShadow: '0 2px 12px rgba(0,0,0,0.05)' }}><ShoppingBag size={48} className="mx-auto text-gray-200 mb-4" /><p className="text-gray-500 font-medium">No orders yet</p></div>

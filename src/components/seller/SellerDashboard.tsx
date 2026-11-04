@@ -9,7 +9,7 @@ import ShopLinkCard from './ShopLinkCard';
 import { useCategories, refreshCategories, slugify } from '../../lib/catalog';
 import { canChangeOrderStatus, cancellationLabel, orderEarnings, ORDER_STATUSES, statusLabel } from '../../lib/commerce';
 import CancelOrderDialog from '../CancelOrderDialog';
-import { OrderSearch, OrderTimeline } from '../OrderDetails';
+import { OrderSearch, OrderDetailsDialog } from '../OrderDetails';
 import SellerRules from './SellerRules';
 import Button from '../ui/Button';
 
@@ -345,7 +345,7 @@ function OrdersTab({ seller }: { seller: Seller }) {
   return (
     <div>
       <h1 className="text-2xl font-black text-gray-900 mb-6">Orders</h1>
-      <OrderSearch onSearch={async n => { const { data } = await supabase.from('orders').select('*, order_items(*)').eq('seller_id', seller.id).eq('order_number', n).maybeSingle(); if (!data) return 'No order with that number in your shop.'; setSelectedOrder(data as Order); return null; }} />
+      <OrderSearch onSearch={async n => { const { data, error } = await supabase.from('orders').select('*, order_items(*)').eq('seller_id', seller.id).eq('order_number', n).maybeSingle(); if (error) throw error; if (!data) return 'No order with that number in your shop.'; setSelectedOrder(data as Order); return null; }} />
       {statusError && <p role="alert" className="text-destructive text-sm mb-4">{statusError}</p>}
       {loading ? <div className="text-center py-10 text-gray-400">Loading...</div> : orders.length === 0 ? (
         <div className="text-center py-20 bg-white rounded-2xl" style={{ boxShadow: '0 2px 12px rgba(0,0,0,0.05)' }}><ShoppingBag size={48} className="mx-auto text-gray-200 mb-4" /><p className="text-gray-500 font-medium">No orders yet</p></div>
@@ -371,7 +371,7 @@ function OrdersTab({ seller }: { seller: Seller }) {
               <div className="flex flex-wrap gap-3 items-center justify-between pt-3 border-t border-border">
                 <div className="flex flex-wrap items-center gap-3">
                   <span className="font-black" style={{ color: '#ff3b30' }}>Rs. {o.total.toLocaleString()}</span>
-                  <button onClick={() => setSelectedOrder(o)} className="text-xs font-bold border border-gray-200 px-3 py-1.5 rounded-lg hover:border-blue-400 transition-colors">View Details</button>
+                  <Button variant="outline" onClick={() => setSelectedOrder(o)}>View Details</Button>
                 </div>
                 <select aria-label={`Status for ${o.order_number}`} value={o.status === 'shipped' ? 'confirmed' : o.status} disabled={savingId === o.id || o.status === 'delivered' || o.status === 'cancelled'} onChange={e => updateStatus(o.id, e.target.value as Order['status'])} className="px-3 py-1.5 rounded-md border border-border text-xs font-medium bg-card text-foreground disabled:opacity-60">
                   {ORDER_STATUSES.map(status => <option key={status} value={status} disabled={!canChangeOrderStatus(o.status, status)}>{statusLabel(status)}</option>)}
@@ -386,79 +386,13 @@ function OrdersTab({ seller }: { seller: Seller }) {
         </div>
       )}
 
-      {/* Order Detail Modal */}
-      {selectedOrder && (
-        <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4" onClick={() => setSelectedOrder(null)}>
-          <div className="bg-white rounded-3xl max-w-lg w-full max-h-[90vh] overflow-y-auto p-6" onClick={e => e.stopPropagation()}>
-            <div className="flex items-center justify-between mb-5">
-              <h2 className="text-lg font-bold text-gray-800">Order Details</h2>
-              <button onClick={() => setSelectedOrder(null)} className="w-8 h-8 flex items-center justify-center rounded-lg hover:bg-gray-100 transition-colors"><X size={18} className="text-gray-500" /></button>
-            </div>
-
-            <div className="mb-4 flex items-center justify-between">
-              <div><p className="text-xs text-gray-400">Order #</p><p className="font-bold text-gray-800">{selectedOrder.order_number}</p></div>
-              <span className="text-xs font-bold px-3 py-1 rounded-full" style={{ background: colors[selectedOrder.status] + '15', color: colors[selectedOrder.status] }}>{selectedOrder.status}</span>
-            </div>
-            <div className="mb-4 pb-4 border-b border-gray-100"><h3 className="font-bold text-sm text-gray-800 mb-2">Order Timing</h3><OrderTimeline order={selectedOrder} /></div>
-
-
-            <div className="mb-4 pb-4 border-b border-gray-100">
-              <h3 className="font-bold text-sm text-gray-800 mb-2">Customer Information</h3>
-              <div className="space-y-1 text-sm">
-                <p><span className="text-gray-400">Name:</span> <span className="font-medium text-gray-700">{selectedOrder.customer_name}</span></p>
-                <p><span className="text-gray-400">Phone:</span> <span className="font-medium text-gray-700">{selectedOrder.customer_phone}</span></p>
-                <p><span className="text-gray-400">Address:</span> <span className="font-medium text-gray-700">{selectedOrder.customer_address}</span></p>
-              </div>
-            </div>
-
-            <div className="mb-4 pb-4 border-b border-gray-100">
-              <h3 className="font-bold text-sm text-gray-800 mb-2">Delivery Location</h3>
-              <div className="space-y-1 text-sm">
-                <p><span className="text-gray-400">Province:</span> <span className="font-medium text-gray-700">{selectedOrder.province || 'N/A'}</span></p>
-                <p><span className="text-gray-400">District:</span> <span className="font-medium text-gray-700">{selectedOrder.district || 'N/A'}</span></p>
-                <p><span className="text-gray-400">Municipality:</span> <span className="font-medium text-gray-700">{selectedOrder.municipality || 'N/A'}</span></p>
-                <p><span className="text-gray-400">Ward:</span> <span className="font-medium text-gray-700">{selectedOrder.ward_number || 'N/A'}</span></p>
-                {selectedOrder.map_url && <a href={selectedOrder.map_url} target="_blank" rel="noopener noreferrer" className="inline-block mt-1 text-blue-500 text-xs hover:underline">View on Google Maps</a>}
-              </div>
-            </div>
-
-            <div className="mb-4 pb-4 border-b border-gray-100">
-              <h3 className="font-bold text-sm text-gray-800 mb-2">Products</h3>
-              <div className="space-y-2">
-                {selectedOrder.order_items?.map((item: any) => (
-                  <div key={item.id} className="flex items-center gap-2 text-sm">
-                    <img src={item.product_image} alt="" className="w-10 h-10 rounded-lg object-cover" />
-                    <div className="flex-1 min-w-0">
-                      <p className="font-medium text-gray-700 line-clamp-1">{item.product_name}</p>
-                      <p className="text-xs text-gray-400">Qty {item.quantity}{item.selected_size ? ` • Size: ${item.selected_size}` : ''}</p>
-                    </div>
-                    <span className="font-bold text-gray-700">Rs. {item.total_price}</span>
-                  </div>
-                ))}
-              </div>
-            </div>
-
-            <div className="mb-4 pb-4 border-b border-gray-100">
-              <h3 className="font-bold text-sm text-gray-800 mb-2">Payment</h3>
-              <div className="space-y-1 text-sm">
-                <p className="flex justify-between"><span className="text-gray-400">Subtotal</span><span className="font-medium">Rs. {selectedOrder.subtotal.toLocaleString()}</span></p>
-                {selectedOrder.promo_discount > 0 && <p className="flex justify-between" style={{ color: '#22c55e' }}><span>Discount ({selectedOrder.promo_code})</span><span>-Rs. {selectedOrder.promo_discount}</span></p>}
-                <p className="flex justify-between font-black text-base pt-1"><span>Total</span><span style={{ color: '#ff3b30' }}>Rs. {selectedOrder.total.toLocaleString()}</span></p>
-                <p className="text-xs text-gray-400 mt-1">Cash on Delivery</p>
-              </div>
-            </div>
-
-            {selectedOrder.notes && <div className="mb-4"><h3 className="font-bold text-sm text-gray-800 mb-1">Notes</h3><p className="text-sm text-gray-600">{selectedOrder.notes}</p></div>}
-
-            <div>
-              <h3 className="font-bold text-sm text-gray-800 mb-2">Update Status</h3>
-              <select aria-label="Update order status" value={selectedOrder.status === 'shipped' ? 'confirmed' : selectedOrder.status} disabled={savingId === selectedOrder.id || selectedOrder.status === 'delivered' || selectedOrder.status === 'cancelled'} onChange={e => updateStatus(selectedOrder.id, e.target.value as Order['status'])} className="w-full px-4 py-2.5 rounded-md border border-border text-sm font-medium bg-card text-foreground disabled:opacity-60">
-                {ORDER_STATUSES.map(status => <option key={status} value={status} disabled={!canChangeOrderStatus(selectedOrder.status, status)}>{statusLabel(status)}</option>)}
-              </select>
-            </div>
-          </div>
-        </div>
-      )}
+      {selectedOrder && <OrderDetailsDialog order={selectedOrder} onClose={() => setSelectedOrder(null)}>
+        <h3 className="font-bold mb-2">Update Status</h3>
+        <select aria-label="Update order status" value={selectedOrder.status === 'shipped' ? 'confirmed' : selectedOrder.status} disabled={savingId === selectedOrder.id || selectedOrder.status === 'delivered' || selectedOrder.status === 'cancelled'} onChange={e => updateStatus(selectedOrder.id, e.target.value as Order['status'])} className="w-full px-4 py-2.5 rounded-md border border-border text-sm font-medium bg-card text-foreground disabled:opacity-60">
+          {ORDER_STATUSES.map(status => <option key={status} value={status} disabled={!canChangeOrderStatus(selectedOrder.status, status)}>{statusLabel(status)}</option>)}
+        </select>
+        {statusError && <p role="alert" className="text-destructive text-sm mt-2">{statusError}</p>}
+      </OrderDetailsDialog>}
       {cancelling && <CancelOrderDialog order={cancelling} actor="seller" onClose={() => setCancelling(null)} onConfirm={cancelOrder} />}
     </div>
   );
