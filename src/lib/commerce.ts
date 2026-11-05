@@ -42,6 +42,13 @@ export function orderEarnings(total: number) {
   const commission = round(sales * COMMISSION_PERCENT / 100);
   return { sales, commission, sellerNet: round(sales - commission) };
 }
+/** Commission owed on delivered orders minus commission payments the admin has approved. */
+export function commissionBalance(orders: Pick<Order, 'total' | 'status'>[], payments: { amount: number; status: string }[]) {
+  const owed = round(orders.filter(o => o.status === 'delivered').reduce((s, o) => s + orderEarnings(o.total).commission, 0));
+  const paid = round(payments.filter(p => p.status === 'approved').reduce((s, p) => s + (Number(p.amount) || 0), 0));
+  const pending = round(payments.filter(p => p.status === 'pending').reduce((s, p) => s + (Number(p.amount) || 0), 0));
+  return { owed, paid, pending, due: Math.max(0, round(owed - paid)) };
+}
 export function earningsSummary(orders: Pick<Order, 'total' | 'status' | 'commission_paid'>[]) {
   return orders.reduce((summary, order) => {
     if (order.status !== 'delivered') return summary;

@@ -74,6 +74,18 @@ export function scoreProduct(p: Product, query: string, cats: Category[] = []) {
   return score + Math.min(p.avg_rating || 0, 5);
 }
 
+const POPULAR = ['t-shirt', 'shirt', 'jeans', 'hoodie', 'jacket', 'kurta', 'kurti', 'dress', 'saree', 'trouser', 'shorts', 'sneakers', 'cap', 'sweater', 'polo', 'cargo pants', 'oversized t-shirt', 'black hoodie', 'denim jacket', 'kids dress'];
+/** Autocomplete phrases: popular clothing terms plus words from real product names that start with what the shopper typed. */
+export function suggestTerms(products: Product[], query: string, limit = 6) {
+  const q = norm(query);
+  if (!q) return [];
+  const pool = new Set<string>(POPULAR);
+  products.forEach(p => { const n = norm(p.name); pool.add(n); n.split(' ').forEach(w => w.length > 2 && pool.add(w)); });
+  const last = q.split(' ').pop() || q;
+  return [...pool].filter(t => t !== q && (t.startsWith(q) || t.split(' ').some(w => w.startsWith(last)) || close(t, q)))
+    .sort((a, b) => Number(b.startsWith(q)) - Number(a.startsWith(q)) || a.length - b.length).slice(0, limit);
+}
+
 export function searchProducts(products: Product[], query: string, cats: Category[] = []) {
   return products.map(p => ({ p, s: scoreProduct(p, query, cats) })).filter(x => x.s > 0).sort((a, b) => b.s - a.s).map(x => x.p);
 }

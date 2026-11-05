@@ -2,7 +2,7 @@ import { ShoppingCart, Search, Menu, X, User, Clock, Store } from 'lucide-react'
 import { useEffect, useRef, useState } from 'react';
 import { useCart } from '../../contexts/CartContext';
 import { supabase, Product, Seller } from '../../lib/supabase';
-import { useCategories, searchProducts } from '../../lib/catalog';
+import { useCategories, searchProducts, suggestTerms } from '../../lib/catalog';
 
 interface Props {
   onCartOpen: () => void;
@@ -48,6 +48,7 @@ export default function Navbar({ onCartOpen, onSearch, searchQuery, onPageChange
 
   const q = draft.trim().toLowerCase();
   const prodHits = q && pool ? searchProducts(pool, q, cats).slice(0, 5) : [];
+  const termHits = q ? suggestTerms(pool || [], q, 5) : [];
   const catHits = q ? cats.filter(c => c.label.toLowerCase().includes(q) || c.slug.includes(q)).slice(0, 4) : [];
   const shopHits = q ? shops.filter(s => s.business_name.toLowerCase().includes(q)).slice(0, 3) : [];
 
@@ -70,6 +71,7 @@ export default function Navbar({ onCartOpen, onSearch, searchQuery, onPageChange
             <p className="px-3 py-1.5 text-[11px] font-bold uppercase tracking-wide text-muted-foreground">Recent</p>
             {recent.map(r => <button key={r} onClick={() => { setDraft(r); submit(r); }} className="w-full flex items-center gap-2 px-3 py-2 rounded-lg text-sm hover:bg-muted text-left text-foreground"><Clock size={14} className="text-muted-foreground" />{r}</button>)}
           </> : <p className="px-3 py-3 text-sm text-muted-foreground">Try “black hoodie”, “kurta women” or a shop name</p>)}
+          {q && termHits.map(t => <button key={t} onClick={() => { setDraft(t); submit(t); }} className="w-full flex items-center gap-2 px-3 py-2 rounded-lg text-sm hover:bg-muted text-left text-foreground"><Search size={14} className="text-muted-foreground" /><span><b>{t.slice(0, q.length) === q ? q : ''}</b>{t.slice(0, q.length) === q ? t.slice(q.length) : t}</span></button>)}
           {q && catHits.length > 0 && <div className="flex flex-wrap gap-2 px-2 py-2">{catHits.map(c => <button key={c.slug} onClick={() => { onSearch(''); setFocused(false); onPageChange(c.slug); }} className="px-3 py-1 rounded-full bg-muted text-xs font-semibold text-foreground">{c.icon} {c.label}</button>)}</div>}
           {q && prodHits.map(p => (
             <button key={p.id} onClick={() => { setFocused(false); onProductClick?.(p); }} className="w-full flex items-center gap-3 px-2 py-2 rounded-lg hover:bg-muted text-left">

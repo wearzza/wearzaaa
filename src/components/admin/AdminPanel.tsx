@@ -4,12 +4,13 @@ import { supabase, Seller, SellerStatus, Order, PromoCode, Banner } from '../../
 import AnalyticsOverview from './AnalyticsOverview';
 import CategoriesTab from './CategoriesTab';
 import ProductsTab from './ProductsTab';
+import CommissionsTab from './CommissionsTab';
 import Button from '../ui/Button';
 import { cancellationLabel } from '../../lib/commerce';
 import { OrderDetailsDialog, OrderSearch } from '../OrderDetails';
-import { Shield, Store, ShoppingBag, Package, Tag, BarChart3, Bell, LogOut, Check, X, Ban, Image, Plus, Edit, Trash2, Upload } from 'lucide-react';
+import { Shield, Store, ShoppingBag, Package, Tag, BarChart3, Bell, LogOut, Check, X, Ban, Image, Plus, Edit, Trash2, Upload, Wallet } from 'lucide-react';
 
-type Tab = 'analytics' | 'sellers' | 'products' | 'categories' | 'orders' | 'promos' | 'banners' | 'notifications';
+type Tab = 'analytics' | 'commissions' | 'sellers' | 'products' | 'categories' | 'orders' | 'promos' | 'banners' | 'notifications';
 
 export default function AdminPanel({ onLogout }: { onLogout: () => void }) {
   const [tab, setTab] = useState<Tab>('analytics');
@@ -18,6 +19,7 @@ export default function AdminPanel({ onLogout }: { onLogout: () => void }) {
 
   const nav: { id: Tab; label: string; icon: any }[] = [
     { id: 'analytics', label: 'Analytics', icon: BarChart3 },
+    { id: 'commissions', label: 'Commissions', icon: Wallet },
     { id: 'sellers', label: 'Sellers', icon: Store },
     { id: 'products', label: 'Products', icon: Package },
     { id: 'categories', label: 'Categories', icon: Tag },
@@ -48,6 +50,7 @@ export default function AdminPanel({ onLogout }: { onLogout: () => void }) {
       <main className="flex-1 min-w-0 p-4 md:p-8 overflow-x-hidden">
         {tab === 'analytics' && <AnalyticsOverview selectedSellerId={reportSellerId} onSelectSeller={setReportSellerId} />}
         {tab === 'sellers' && <SellersTab onSalesOverview={id => { setReportSellerId(id); setTab('analytics'); }} />}
+        {tab === 'commissions' && <CommissionsTab />}
         {tab === 'products' && <ProductsTab />}
         {tab === 'categories' && <CategoriesTab />}
         {tab === 'orders' && <OrdersTab />}

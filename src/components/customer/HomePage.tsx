@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { supabase, Product, Seller, Banner } from '../../lib/supabase';
 import ProductCard from './ProductCard';
+import SearchResults from './SearchResults';
 import { useCategories, searchProducts } from '../../lib/catalog';
 import { Shield, TrendingUp, Tag, Truck, ChevronRight } from 'lucide-react';
 
@@ -46,22 +47,7 @@ export default function HomePage({ onProductClick, onCategoryClick, searchQuery,
   const filtered = searchQuery ? searchProducts(products, searchQuery, cats) : products;
 
   if (searchQuery) {
-    return (
-      <div className="max-w-7xl mx-auto px-4 py-6">
-        <h2 className="text-lg font-bold text-gray-800 mb-4">Search results for "{searchQuery}" ({filtered.length})</h2>
-        {loading ? (
-          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
-            {Array.from({ length: 10 }).map((_, i) => <div key={i} className="bg-gray-100 rounded-2xl animate-pulse" style={{ paddingBottom: '120%' }} />)}
-          </div>
-        ) : filtered.length === 0 ? (
-          <div className="text-center py-20 text-gray-400">No products found</div>
-        ) : (
-          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3 sm:gap-4">
-            {filtered.map(p => <ProductCard key={p.id} product={p} onClick={() => onProductClick(p)} />)}
-          </div>
-        )}
-      </div>
-    );
+    return <SearchResults key={searchQuery} query={searchQuery} products={products} cats={cats} loading={loading} onProductClick={onProductClick} />;
   }
 
   const featured = filtered.slice(0, 10);
