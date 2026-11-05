@@ -33,7 +33,7 @@ export default function SearchResults({ query, products, cats, loading, onProduc
     const pr = PRICES[price];
     let r = matched.filter(p => {
       const cs = p.categories?.length ? p.categories : [p.category];
-      return (!cat || cs.includes(cat)) && p.real_price >= pr.min && p.real_price <= pr.max && (p.avg_rating || 0) >= minRating && (!onSale || (p.cut_price && p.cut_price > p.real_price));
+      return (!cat || (cs as string[]).includes(cat)) && p.real_price >= pr.min && p.real_price <= pr.max && (p.avg_rating || 0) >= minRating && (!onSale || (p.cut_price && p.cut_price > p.real_price));
     });
     if (sort === 'low') r = [...r].sort((a, b) => a.real_price - b.real_price);
     if (sort === 'high') r = [...r].sort((a, b) => b.real_price - a.real_price);
