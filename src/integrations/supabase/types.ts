@@ -14,6 +14,24 @@ export type Database = {
   }
   public: {
     Tables: {
+      app_settings: {
+        Row: {
+          key: string
+          updated_at: string | null
+          value: string | null
+        }
+        Insert: {
+          key: string
+          updated_at?: string | null
+          value?: string | null
+        }
+        Update: {
+          key?: string
+          updated_at?: string | null
+          value?: string | null
+        }
+        Relationships: []
+      }
       banners: {
         Row: {
           button_link: string | null
@@ -94,6 +112,53 @@ export type Database = {
           {
             foreignKeyName: "categories_created_by_seller_fkey"
             columns: ["created_by_seller"]
+            isOneToOne: false
+            referencedRelation: "sellers"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      commission_payments: {
+        Row: {
+          admin_note: string | null
+          amount: number
+          created_at: string | null
+          id: string
+          note: string | null
+          reference: string | null
+          reviewed_at: string | null
+          screenshot_url: string
+          seller_id: string
+          status: string
+        }
+        Insert: {
+          admin_note?: string | null
+          amount: number
+          created_at?: string | null
+          id?: string
+          note?: string | null
+          reference?: string | null
+          reviewed_at?: string | null
+          screenshot_url: string
+          seller_id: string
+          status?: string
+        }
+        Update: {
+          admin_note?: string | null
+          amount?: number
+          created_at?: string | null
+          id?: string
+          note?: string | null
+          reference?: string | null
+          reviewed_at?: string | null
+          screenshot_url?: string
+          seller_id?: string
+          status?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "commission_payments_seller_id_fkey"
+            columns: ["seller_id"]
             isOneToOne: false
             referencedRelation: "sellers"
             referencedColumns: ["id"]
