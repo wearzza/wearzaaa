@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { supabase, Product, Order, PromoCode, Review, ProductCategory, Seller } from '../../lib/supabase';
 import { useSeller } from '../../contexts/SellerContext';
 import { hashPassword } from '../../lib/auth';
-import { Store, Package, ShoppingBag, Tag, Star, Settings, LogOut, Plus, Edit, Trash2, Upload, X, Clock, Bell } from 'lucide-react';
+import { Store, Package, ShoppingBag, Tag, Star, Settings, LogOut, Plus, Edit, Trash2, Upload, X, Clock, Bell, Wallet } from 'lucide-react';
 import PasswordField from '../PasswordField';
 import SellerAnalytics from './SellerAnalytics';
 import ShopLinkCard from './ShopLinkCard';
@@ -11,10 +11,11 @@ import { canChangeOrderStatus, cancellationLabel, orderEarnings, ORDER_STATUSES,
 import CancelOrderDialog from '../CancelOrderDialog';
 import { OrderSearch, OrderDetailsDialog } from '../OrderDetails';
 import SellerRules from './SellerRules';
+import CommissionPayTab from './CommissionPayTab';
 import Button from '../ui/Button';
 import { listingActiveOnSave } from '../../lib/productListing';
 
-type Tab = 'overview' | 'products' | 'orders' | 'promos' | 'reviews' | 'notifications' | 'branding' | 'settings' | 'rules';
+type Tab = 'overview' | 'commission' | 'products' | 'orders' | 'promos' | 'reviews' | 'notifications' | 'branding' | 'settings' | 'rules';
 
 export default function SellerDashboard() {
   const { seller, setSeller, logout } = useSeller();
@@ -57,6 +58,7 @@ export default function SellerDashboard() {
 
   const nav: { id: Tab; label: string; icon: any }[] = [
     { id: 'overview', label: 'Overview', icon: Store },
+    { id: 'commission', label: 'Pay Commission', icon: Wallet },
     { id: 'products', label: 'Products', icon: Package },
     { id: 'orders', label: 'Orders', icon: ShoppingBag },
     { id: 'promos', label: 'Promo Codes', icon: Tag },
@@ -96,6 +98,7 @@ export default function SellerDashboard() {
 
       <main className="flex-1 min-w-0 p-4 md:p-8 overflow-x-hidden">
          {tab === 'overview' && <><ShopLinkCard seller={seller} /><SellerAnalytics seller={seller} onNavigate={setTab} /></>}
+        {tab === 'commission' && <CommissionPayTab seller={seller} />}
         {tab === 'products' && <ProductsTab seller={seller} />}
         {tab === 'orders' && <OrdersTab seller={seller} />}
         {tab === 'promos' && <PromosTab seller={seller} />}

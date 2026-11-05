@@ -1,5 +1,5 @@
 import { describe, expect, test } from 'bun:test';
-import { canCustomerCancel, canChangeOrderStatus, COMMISSION_PERCENT, earningsSummary, orderEarnings, ORDER_STATUSES, validCancellationReason } from './commerce';
+import { commissionBalance, canCustomerCancel, canChangeOrderStatus, COMMISSION_PERCENT, earningsSummary, orderEarnings, ORDER_STATUSES, validCancellationReason } from './commerce';
 
 describe('Wearza commerce rules', () => {
   test('platform commission is 10% instead of 25%', () => {
@@ -46,5 +46,11 @@ describe('Wearza commerce rules', () => {
       { total: 800, status: 'pending', commission_paid: false },
       { total: 900, status: 'cancelled', commission_paid: false },
     ])).toEqual({ sales: 1000, commission: 100, sellerNet: 900, delivered: 2, paid: 60, due: 40 });
+  });
+});
+describe('commission balance', () => {
+  test('due is 10% of delivered orders minus approved payments only', () => {
+    const b = commissionBalance([{ total: 1000, status: 'delivered' }, { total: 500, status: 'cancelled' }], [{ amount: 40, status: 'approved' }, { amount: 30, status: 'pending' }, { amount: 99, status: 'rejected' }]);
+    expect(b).toEqual({ owed: 100, paid: 40, pending: 30, due: 60 });
   });
 });
