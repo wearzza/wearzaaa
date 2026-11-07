@@ -13,7 +13,7 @@ interface Props {
 }
 
 export default function Checkout({ onBack, onSuccess }: Props) {
-  const { items, totalPrice, clearCart } = useCart();
+  const { items, totalPrice, clearCart, removeFromCart } = useCart();
   const [form, setForm] = useState({
     name: '', phone: '', address: '',
     province: '', district: '', municipality: '', ward_number: '', map_url: '',
@@ -58,8 +58,6 @@ export default function Checkout({ onBack, onSuccess }: Props) {
 
     try {
 
-    const locationStr = `${form.municipality}-${form.ward_number}, ${form.district}, ${form.province}`;
-
     const groups = new Map<string, typeof items>();
     items.forEach(item => {
       const arr = groups.get(item.product.seller_id) || [];
@@ -70,36 +68,19 @@ export default function Checkout({ onBack, onSuccess }: Props) {
     const orderNumbers: string[] = [];
 
     for (const [sellerId, sellerItems] of groups) {
-      const subtotal = sellerItems.reduce((s, i) => s + itemPrice(i) * i.quantity, 0);
-      const sellerPromo = promoApplied ? Math.round((subtotal / totalPrice) * promoDiscount) : 0;
-      const total = Math.max(0, subtotal - sellerPromo);
-
       const token = crypto.randomUUID() + crypto.randomUUID();
       const hash = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(token));
       const tokenHash = Array.from(new Uint8Array(hash)).map(b => b.toString(16).padStart(2, '0')).join('');
-      const { data: order, error: insertError } = await supabase.from('orders').insert({
-        customer_name: form.name, customer_phone: form.phone, customer_address: form.address, customer_location: locationStr,
-        province: form.province, district: form.district, municipality: form.municipality,
-        ward_number: form.ward_number ? +form.ward_number : null, map_url: form.map_url || null,
-        seller_id: sellerId, promo_code: promoApplied ? form.promoCode.toUpperCase() : null, promo_discount: sellerPromo,
-        subtotal, total, payment_method: 'cod', notes: form.notes || null, status: 'pending', management_token_hash: tokenHash,
-      }).select().single();
-
-      if (insertError || !order) throw new Error('Your order was not saved. Please try again.');
+      const { data: order, error: insertError } = await supabase.rpc('wearza_place_order', {
+        _customer: { name: form.name, phone: form.phone, address: form.address, province: form.province, district: form.district, municipality: form.municipality, ward_number: Number(form.ward_number), map_url: form.map_url, notes: form.notes },
+        _seller_id: sellerId,
+        _items: sellerItems.map(i => ({ product_id: i.product.id, variant_id: i.variantId || null, selected_size: i.selectedSize || null, quantity: i.quantity, expected_price: itemPrice(i) })),
+        _token_hash: tokenHash, _promo_code: promoApplied ? form.promoCode.toUpperCase() : null,
+      });
+      if (insertError || !order) throw new Error(insertError?.message || 'Your order was not saved. Please try again.');
       saveTrackedOrder({ id: order.id, token, number: order.order_number });
-
-      if (order) {
-        orderNumbers.push(order.order_number);
-        const { error: itemError } = await supabase.from('order_items').insert(sellerItems.map(i => ({
-          order_id: order.id, product_id: i.product.id, product_name: i.product.name,
-          product_image: i.product.image_urls[0] || null, seller_id: sellerId,
-          selected_size: i.selectedSize || null,
-          selected_variant_id: i.variantId || null,
-          selected_color: selectionFor(i.product, i.variantId)?.color || null,
-          quantity: i.quantity, unit_price: itemPrice(i), total_price: itemPrice(i) * i.quantity,
-        })));
-        if (itemError) throw new Error('Your order was saved, but some items need review. Check My Orders before ordering again.');
-      }
+      orderNumbers.push(order.order_number);
+      sellerItems.forEach(i => removeFromCart(cartKey(i)));
     }
 
     clearCart();
