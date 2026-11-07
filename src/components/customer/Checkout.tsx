@@ -5,6 +5,7 @@ import { PROVINCES, getDistricts, getMunicipalities } from '../../lib/nepalLocat
 import { ArrowLeft, Check, Tag, MapPin, Phone, User, Truck, Navigation } from 'lucide-react';
 import { saveTrackedOrder } from '../../lib/orderTracking';
 import Button from '../ui/Button';
+import { cartKey, itemPrice, selectionFor, sizeLabel, deliveryLabel } from '../../lib/productVariants';
 
 interface Props {
   onBack: () => void;
@@ -69,7 +70,7 @@ export default function Checkout({ onBack, onSuccess }: Props) {
     const orderNumbers: string[] = [];
 
     for (const [sellerId, sellerItems] of groups) {
-      const subtotal = sellerItems.reduce((s, i) => s + i.product.real_price * i.quantity, 0);
+      const subtotal = sellerItems.reduce((s, i) => s + itemPrice(i) * i.quantity, 0);
       const sellerPromo = promoApplied ? Math.round((subtotal / totalPrice) * promoDiscount) : 0;
       const total = Math.max(0, subtotal - sellerPromo);
 
@@ -93,7 +94,9 @@ export default function Checkout({ onBack, onSuccess }: Props) {
           order_id: order.id, product_id: i.product.id, product_name: i.product.name,
           product_image: i.product.image_urls[0] || null, seller_id: sellerId,
           selected_size: i.selectedSize || null,
-          quantity: i.quantity, unit_price: i.product.real_price, total_price: i.product.real_price * i.quantity,
+          selected_variant_id: i.variantId || null,
+          selected_color: selectionFor(i.product, i.variantId)?.color || null,
+          quantity: i.quantity, unit_price: itemPrice(i), total_price: itemPrice(i) * i.quantity,
         })));
         if (itemError) throw new Error('Your order was saved, but some items need review. Check My Orders before ordering again.');
       }
@@ -205,11 +208,12 @@ export default function Checkout({ onBack, onSuccess }: Props) {
             <h2 className="font-bold text-gray-800 mb-3">Order Summary</h2>
             <div className="space-y-2 mb-4 max-h-48 overflow-y-auto">
               {items.map(i => (
-                <div key={i.product.id} className="flex gap-2 text-sm">
+                <div key={cartKey(i)} className="flex gap-2 text-sm">
                   <img src={i.product.image_urls[0]} alt="" className="w-10 h-10 rounded-lg object-cover" />
                   <div className="flex-1 min-w-0">
                     <p className="font-medium text-gray-700 line-clamp-1">{i.product.name}</p>
-                    <p className="text-xs text-gray-400">Qty {i.quantity} × Rs. {i.product.real_price}{i.selectedSize ? ` • ${i.selectedSize}` : ''}</p>
+                    <p className="text-xs text-muted-foreground">Qty {i.quantity} × Rs. {itemPrice(i)}{i.selectedSize ? ` · ${sizeLabel(i.selectedSize, i.product.size_system)}` : ''}{selectionFor(i.product, i.variantId)?.color ? ` · ${selectionFor(i.product, i.variantId)?.color}` : ''}</p>
+                    {i.product.free_delivery && <p className="text-xs text-chart-green">Free delivery</p>}
                   </div>
                 </div>
               ))}
@@ -217,7 +221,7 @@ export default function Checkout({ onBack, onSuccess }: Props) {
             <div className="space-y-1.5 text-sm border-t border-gray-100 pt-3">
               <div className="flex justify-between text-gray-600"><span>Subtotal</span><span>Rs. {totalPrice.toLocaleString()}</span></div>
               {promoApplied && <div className="flex justify-between" style={{ color: '#22c55e' }}><span>Discount</span><span>-Rs. {promoDiscount}</span></div>}
-              <div className="flex justify-between text-gray-600"><span>Delivery</span><span className="text-xs">By seller</span></div>
+              <div className="flex justify-between gap-3 text-muted-foreground"><span>Delivery</span><span className="text-xs text-right">{deliveryLabel(items.map(i => i.product))}</span></div>
               <div className="flex justify-between font-black text-base pt-2 border-t border-gray-100"><span>Total</span><span style={{ color: '#ff3b30' }}>Rs. {grandTotal.toLocaleString()}</span></div>
             </div>
 

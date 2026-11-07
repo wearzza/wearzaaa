@@ -17,7 +17,7 @@ export default function ProductsTab({ seller }: { seller: Seller }) {
   const [saving, setSaving] = useState(false);
   async function load() {
     setLoading(true); setError('');
-    try { const rows = await fetchAllRows<Product>('products', '*', q => q.eq('seller_id', seller.id)); setProducts(rows.sort((a, b) => +new Date(b.created_at) - +new Date(a.created_at))); }
+    try { const rows = await fetchAllRows<Product>('products', '*', seller.id); setProducts(rows.sort((a, b) => +new Date(b.created_at) - +new Date(a.created_at))); }
     catch { setError('Could not load your products. Please try again.'); }
     finally { setLoading(false); }
   }
