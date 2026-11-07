@@ -3,6 +3,8 @@ import { supabase, Product, Review } from '../../lib/supabase';
 import { useCart } from '../../contexts/CartContext';
 import StarRating from '../StarRating';
 import { ArrowLeft, ShoppingCart, Zap, Shield, Truck, Star, MessageSquare } from 'lucide-react';
+import Button from '../ui/Button';
+import { sizeLabel } from '../../lib/productVariants';
 
 interface Props {
   product: Product;
@@ -17,6 +19,13 @@ export default function ProductDetail({ product, onBack, onCheckout, onShopClick
   const [activeImage, setActiveImage] = useState(0);
   const [quantity, setQuantity] = useState(1);
   const [selectedSize, setSelectedSize] = useState('');
+  const [selectedColor, setSelectedColor] = useState('');
+  const [cartNotice, setCartNotice] = useState('');
+  const variants = product.variants || [];
+  const variant = variants.find(v => v.size === selectedSize && v.color === selectedColor);
+  const price = variant?.price ?? product.real_price;
+  const availableStock = variants.length ? variant?.stock || 0 : product.stock;
+  const ready = product.is_active && availableStock > 0 && (!variants.length || Boolean(variant));
   const [showReviewForm, setShowReviewForm] = useState(false);
   const [newReview, setNewReview] = useState({ name: '', rating: 5, comment: '' });
   const [submitting, setSubmitting] = useState(false);
@@ -29,7 +38,14 @@ export default function ProductDetail({ product, onBack, onCheckout, onShopClick
     load();
   }, [product.id]);
 
-  const discount = product.cut_price ? Math.round(((product.cut_price - product.real_price) / product.cut_price) * 100) : 0;
+  const discount = product.cut_price ? Math.max(0, Math.round(((product.cut_price - price) / product.cut_price) * 100)) : 0;
+  function add(checkout = false) {
+    if (!ready) return;
+    if (addToCart(product, Math.min(quantity, availableStock), selectedSize, variant?.id)) {
+      setCartNotice('Added to your cart.');
+      if (checkout) onCheckout();
+    }
+  }
 
   async function submitReview() {
     if (!newReview.name.trim() || !newReview.comment.trim()) return;
@@ -92,8 +108,8 @@ export default function ProductDetail({ product, onBack, onCheckout, onShopClick
           </div>
 
           <div className="flex items-center gap-3 mb-5">
-            <span className="text-3xl font-black" style={{ color: '#ff3b30' }}>Rs. {product.real_price.toLocaleString()}</span>
-            {product.cut_price && <span className="text-lg text-gray-400 line-through">Rs. {product.cut_price.toLocaleString()}</span>}
+            <span className="text-3xl font-black text-primary">{variants.length && !variant ? 'From ' : ''}Rs. {Number(price).toLocaleString()}</span>
+            {product.cut_price && product.cut_price > price && <span className="text-lg text-muted-foreground line-through">Rs. {product.cut_price.toLocaleString()}</span>}
           </div>
 
           {product.description && (
@@ -112,37 +128,23 @@ export default function ProductDetail({ product, onBack, onCheckout, onShopClick
             <span className="text-xs font-bold text-primary">Visit shop →</span>
           </button>
 
-          <div className="flex items-center gap-4 mb-5">
-            <span className="text-sm font-medium text-gray-700">Size:</span>
-            <div className="flex gap-2">
-              {['S', 'M', 'L', 'XL', 'Free'].map(sz => (
-                <button key={sz} onClick={() => setSelectedSize(sz)} className="w-9 h-9 rounded-lg border text-xs font-bold transition-colors"
-                  style={{ borderColor: selectedSize === sz ? '#ff3b30' : '#e5e7eb', color: selectedSize === sz ? '#ff3b30' : '#6b7280', background: selectedSize === sz ? '#fff1f0' : 'white' }}>{sz}</button>
-              ))}
-            </div>
+          {variants.length > 0 && <div className="space-y-4 mb-5 text-foreground">
+            <fieldset><legend className="text-sm font-semibold mb-2">Color{selectedColor ? `: ${selectedColor}` : ''}</legend><div className="flex flex-wrap gap-2">{[...new Set(variants.map(v => v.color))].map(color => <Button key={color} variant={selectedColor === color ? 'primary' : 'outline'} aria-pressed={selectedColor === color} disabled={!variants.some(v => v.color === color && v.stock > 0)} onClick={() => { setSelectedColor(color); if (!variants.some(v => v.color === color && v.size === selectedSize && v.stock > 0)) setSelectedSize(''); setQuantity(1); setCartNotice(''); }}>{color}</Button>)}</div></fieldset>
+            <fieldset><legend className="text-sm font-semibold mb-2">Size{selectedSize ? `: ${sizeLabel(selectedSize, product.size_system)}` : ''}</legend><div className="flex flex-wrap gap-2">{[...new Set(variants.map(v => v.size))].map(size => <Button key={size} variant={selectedSize === size ? 'primary' : 'outline'} aria-pressed={selectedSize === size} disabled={!variants.some(v => v.size === size && (!selectedColor || v.color === selectedColor) && v.stock > 0)} onClick={() => { setSelectedSize(size); setQuantity(1); setCartNotice(''); }} className="min-w-10">{sizeLabel(size, product.size_system)}</Button>)}</div></fieldset>
+            {variant && (variant.width || variant.length) && <p className="text-xs text-muted-foreground border-y border-border py-3">{variant.width ? `Width: ${variant.width} ${product.measurement_unit || 'cm'}` : ''}{variant.width && variant.length ? ' · ' : ''}{variant.length ? `Length: ${variant.length} ${product.measurement_unit || 'cm'}` : ''}</p>}
+            {!variant && <p className="text-xs text-muted-foreground">Select a size and color.</p>}
+          </div>}
+          <div className="flex flex-wrap items-center gap-4 mb-5">
+            <span className="text-sm font-medium text-foreground">Quantity</span>
+            <div className="flex items-center gap-2"><Button variant="outline" aria-label="Decrease quantity" disabled={quantity <= 1} onClick={() => setQuantity(q => Math.max(1, q - 1))} className="w-8 h-8 p-0">−</Button><span className="w-10 text-center font-semibold">{quantity}</span><Button variant="outline" aria-label="Increase quantity" disabled={!ready || quantity >= availableStock} onClick={() => setQuantity(q => Math.min(availableStock, q + 1))} className="w-8 h-8 p-0">+</Button></div>
+            <span className="text-xs text-muted-foreground">{variants.length && !variant ? `${product.stock} across all options` : `${availableStock} in stock`}</span>
           </div>
-
-          <div className="flex items-center gap-4 mb-5">
-            <span className="text-sm font-medium text-gray-700">Quantity:</span>
-            <div className="flex items-center gap-2">
-              <button onClick={() => setQuantity(q => Math.max(1, q - 1))} className="w-8 h-8 rounded-lg border border-gray-200 flex items-center justify-center hover:border-red-400 transition-colors">−</button>
-              <span className="w-10 text-center font-semibold">{quantity}</span>
-              <button onClick={() => setQuantity(q => q + 1)} className="w-8 h-8 rounded-lg border border-gray-200 flex items-center justify-center hover:border-red-400 transition-colors">+</button>
-            </div>
-            <span className="text-xs text-gray-400">{product.stock} in stock</span>
-          </div>
-
-          <div className="flex gap-3 mb-5">
-            <button onClick={() => addToCart(product, quantity, selectedSize)} className="flex-1 py-3.5 rounded-2xl font-bold text-sm border-2 transition-all hover:bg-red-50 active:scale-95" style={{ borderColor: '#ff3b30', color: '#ff3b30' }}>
-              <ShoppingCart size={16} className="inline mr-1.5" /> Add to Cart
-            </button>
-            <button onClick={() => { addToCart(product, quantity, selectedSize); onCheckout(); }} className="flex-1 py-3.5 rounded-2xl font-bold text-sm text-white transition-all hover:opacity-90 active:scale-95" style={{ background: 'linear-gradient(135deg, #ff3b30 0%, #e8251a 100%)' }}>
-              <Zap size={16} className="inline mr-1.5" /> Buy Now
-            </button>
-          </div>
+          <div className="flex gap-3 mb-3"><Button variant="outline" disabled={!ready} onClick={() => add()} className="flex-1 py-3"><ShoppingCart size={16} />Add to Cart</Button><Button disabled={!ready} onClick={() => add(true)} className="flex-1 py-3"><Zap size={16} />Buy Now</Button></div>
+          {cartNotice && <p role="status" className="text-sm text-chart-green mb-3">{cartNotice}</p>}
+          <p className="text-sm flex items-center gap-2 mb-5 text-chart-green"><Truck size={16} />{product.free_delivery ? 'Free delivery' : 'Delivery fee confirmed by seller'}</p>
 
           <div className="grid grid-cols-3 gap-2 text-center">
-            <div className="p-3 bg-gray-50 rounded-xl"><Truck size={18} className="mx-auto mb-1 text-gray-600" /><p className="text-xs text-gray-500">Seller Delivery</p></div>
+            <div className="p-3 bg-gray-50 rounded-xl"><Truck size={18} className="mx-auto mb-1 text-gray-600" /><p className="text-xs text-gray-500">{product.free_delivery ? 'Free Delivery' : 'Seller Delivery'}</p></div>
             <div className="p-3 bg-gray-50 rounded-xl"><Shield size={18} className="mx-auto mb-1 text-gray-600" /><p className="text-xs text-gray-500">Verified Store</p></div>
             <div className="p-3 bg-gray-50 rounded-xl"><Star size={18} className="mx-auto mb-1 text-gray-600" /><p className="text-xs text-gray-500">COD Available</p></div>
           </div>

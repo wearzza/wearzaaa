@@ -25,3 +25,6 @@
 - Reuse `OrderDetailsDialog` and `OrderSearch` in seller/admin order views, and record processing timestamps in a database trigger so both timelines reflect saved events.
 - Phone-free customer order searches must use a locally saved capability or verified lookup reference, never an unrestricted order-number query, to keep guest details private.
 - Keep all-shop product management in a separate admin ProductsTab; Cancel and Reject hide listings through `is_active` without deleting order history, and seller edits preserve the saved visibility flag.
+- Keep seller listings in ProductsTab/ProductEditor with shared productVariants helpers; JSON variants have stable IDs, per-option price/stock and per-size measurements, while database triggers validate options and snapshot them onto order items so later edits cannot change historical purchases.
+- Identify cart rows by product plus variant and use the selected option price throughout checkout; listings without variants retain their base price/stock for compatibility.
+- Place each seller's checkout via wearza_place_order so current prices/options are validated and the order plus its item snapshots save atomically; remove successfully placed groups from the cart to avoid duplicate retries.

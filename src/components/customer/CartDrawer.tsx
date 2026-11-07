@@ -1,5 +1,6 @@
 import { X, Plus, Minus, Trash2, ShoppingBag } from 'lucide-react';
 import { useCart } from '../../contexts/CartContext';
+import { cartKey, itemPrice, itemStock, selectionFor, sizeLabel } from '../../lib/productVariants';
 
 export default function CartDrawer({ open, onClose, onCheckout }: { open: boolean; onClose: () => void; onCheckout: () => void }) {
   const { items, removeFromCart, updateQty, totalPrice, totalItems } = useCart();
@@ -33,7 +34,7 @@ export default function CartDrawer({ open, onClose, onCheckout }: { open: boolea
               <p className="text-gray-400 text-sm mt-1">Add some products to get started</p>
             </div>
           ) : items.map(item => (
-            <div key={item.product.id} className="flex gap-3 p-3 bg-gray-50 rounded-xl">
+            <div key={cartKey(item)} className="flex gap-3 p-3 bg-gray-50 rounded-xl">
               <img
                 src={item.product.image_urls[0] || 'https://images.pexels.com/photos/1536619/pexels-photo-1536619.jpeg?auto=compress&cs=tinysrgb&w=100'}
                 alt={item.product.name}
@@ -42,18 +43,20 @@ export default function CartDrawer({ open, onClose, onCheckout }: { open: boolea
               <div className="flex-1 min-w-0">
                 <p className="text-sm font-semibold text-gray-800 line-clamp-1">{item.product.name}</p>
                 <p className="text-xs text-gray-400 mt-0.5">{item.product.sellers?.business_name}</p>
-                <p className="text-sm font-bold mt-1" style={{ color: '#ff3b30' }}>Rs. {(item.product.real_price * item.quantity).toLocaleString()}</p>
+                <p className="text-xs text-muted-foreground break-words">{sizeLabel(item.selectedSize || '', item.product.size_system)}{selectionFor(item.product, item.variantId)?.color ? ` · ${selectionFor(item.product, item.variantId)?.color}` : ''}</p>
+                {item.product.free_delivery && <p className="text-xs text-chart-green">Free delivery</p>}
+                <p className="text-sm font-bold mt-1 text-primary">Rs. {(itemPrice(item) * item.quantity).toLocaleString()}</p>
               </div>
               <div className="flex flex-col items-end justify-between">
-                <button onClick={() => removeFromCart(item.product.id)} className="text-gray-400 hover:text-red-500 transition-colors">
+                <button aria-label={`Remove ${item.product.name} ${item.selectedSize || ''} ${selectionFor(item.product, item.variantId)?.color || ''}`} onClick={() => removeFromCart(cartKey(item))} className="text-gray-400 hover:text-red-500 transition-colors">
                   <Trash2 size={14} />
                 </button>
                 <div className="flex items-center gap-1">
-                  <button onClick={() => updateQty(item.product.id, item.quantity - 1)} className="w-6 h-6 rounded-md bg-white border border-gray-200 flex items-center justify-center hover:border-red-400 transition-colors">
+                  <button aria-label="Decrease quantity" onClick={() => updateQty(cartKey(item), item.quantity - 1)} className="w-6 h-6 rounded-md bg-white border border-gray-200 flex items-center justify-center hover:border-red-400 transition-colors">
                     <Minus size={10} />
                   </button>
                   <span className="text-sm font-semibold w-5 text-center">{item.quantity}</span>
-                  <button onClick={() => updateQty(item.product.id, item.quantity + 1)} className="w-6 h-6 rounded-md bg-white border border-gray-200 flex items-center justify-center hover:border-red-400 transition-colors">
+                  <button aria-label="Increase quantity" disabled={item.quantity >= itemStock(item)} onClick={() => updateQty(cartKey(item), item.quantity + 1)} className="w-6 h-6 rounded-md bg-white border border-gray-200 flex items-center justify-center hover:border-red-400 transition-colors disabled:opacity-40">
                     <Plus size={10} />
                   </button>
                 </div>

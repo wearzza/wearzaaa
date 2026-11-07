@@ -7,6 +7,7 @@ import { canManageGuestOrder, readOrderLookups, savedOrderReferences } from '../
 import { useCart } from '../../contexts/CartContext';
 import CancelOrderDialog from '../CancelOrderDialog';
 import Button from '../ui/Button';
+import { orderOptionText } from '../../lib/productVariants';
 
 export default function OrdersPage({ onHome }: { onHome: () => void }) {
   const { addToCart } = useCart();
@@ -53,8 +54,15 @@ export default function OrdersPage({ onHome }: { onHome: () => void }) {
     const ids = (order.order_items || []).map(i => i.product_id).filter(Boolean) as string[];
     const { data } = await supabase.from('products').select('*').in('id', ids).eq('is_active', true);
     if (!data?.length) { setNotice('These products are no longer available.'); return; }
-    order.order_items?.forEach(i => { const p = data.find(d => d.id === i.product_id); if (p) addToCart(p as Product, i.quantity, i.selected_size || undefined); });
-    setNotice('Items added to your cart. Open the cart to place a new order.');
+    let added = 0, unavailable = 0;
+    order.order_items?.forEach(i => {
+      const p = data.find(d => d.id === i.product_id) as Product | undefined;
+      if (!p) { unavailable++; return; }
+      const variant = p.variants?.find(v => v.id === i.selected_variant_id || (v.size === i.selected_size && v.color === i.selected_color));
+      if (p.variants?.length && !variant) { unavailable++; return; }
+      if (addToCart(p, i.quantity, i.selected_size || undefined, variant?.id)) added++; else unavailable++;
+    });
+    setNotice(added ? `Items added to your cart at current prices.${unavailable ? ' Some options are no longer available.' : ''}` : 'These size and color options are no longer available.');
     window.scrollTo({ top: 0, behavior: 'smooth' });
   }
   async function findOrder(e: React.FormEvent) {
@@ -82,7 +90,7 @@ export default function OrdersPage({ onHome }: { onHome: () => void }) {
     {notice && <p role="status" className="mb-4 p-3 bg-chart-green/10 border border-chart-green/30 rounded-md text-sm">{notice}</p>}
     {loading ? <p role="status" className="text-center py-12 text-muted-foreground">Loading orders…</p> : filtered.length === 0 ? <div className="text-center py-16"><Package size={40} className="mx-auto text-muted-foreground mb-4" /><h2 className="font-bold">No orders found</h2><p className="text-sm text-muted-foreground mt-2 mb-5">New orders placed on this device will appear here.</p><Button onClick={onHome}>Start shopping</Button></div> : <div className="space-y-4">{filtered.map(order => <article key={order.id} className="bg-card border border-border rounded-lg p-4">
       <div className="flex flex-wrap items-start justify-between gap-3 mb-4"><div><p className="text-xs text-muted-foreground">#{order.order_number}</p><p className="text-sm font-semibold mt-1">{new Date(order.created_at).toLocaleDateString('en', { dateStyle: 'medium' })}</p></div><span className={`px-3 py-1 text-xs rounded-full font-bold ${STATUS_TONE[order.status]}`}>{statusLabel(order.status)}</span></div>
-      <div className="space-y-3 mb-4">{order.order_items?.map(item => <div key={item.id} className="flex items-center gap-3">{item.product_image ? <img src={item.product_image} alt="" className="w-12 h-12 object-cover rounded-md shrink-0" /> : <Package className="w-12 h-12 text-muted-foreground shrink-0" />}<div className="min-w-0 flex-1"><p className="text-sm font-semibold break-words">{item.product_name}</p><p className="text-xs text-muted-foreground">Qty {item.quantity}{item.selected_size ? ` · Size ${item.selected_size}` : ''}</p></div><span className="text-sm font-bold shrink-0">Rs. {Number(item.total_price).toLocaleString()}</span></div>)}</div>
+      <div className="space-y-3 mb-4">{order.order_items?.map(item => <div key={item.id} className="flex items-center gap-3">{item.product_image ? <img src={item.product_image} alt="" className="w-12 h-12 object-cover rounded-md shrink-0" /> : <Package className="w-12 h-12 text-muted-foreground shrink-0" />}<div className="min-w-0 flex-1"><p className="text-sm font-semibold break-words">{item.product_name}</p><p className="text-xs text-muted-foreground break-words">Qty {item.quantity} · {orderOptionText(item)}</p>{item.free_delivery && <p className="text-xs text-chart-green">Free delivery</p>}</div><span className="text-sm font-bold shrink-0">Rs. {Number(item.total_price).toLocaleString()}</span></div>)}</div>
       {order.status !== 'cancelled' && <ol className="grid grid-cols-4 gap-2 mb-4" aria-label="Order progress">{(['pending', 'processing', 'confirmed', 'delivered'] as const).map((s, i) => { const step = order.status === 'shipped' ? 2 : ['pending', 'processing', 'confirmed', 'delivered'].indexOf(order.status); return <li key={s} className={`border-t-2 pt-2 text-[10px] sm:text-xs ${i <= step ? 'border-primary text-foreground' : 'border-border text-muted-foreground'}`}>{statusLabel(s)}</li>; })}</ol>}
       {order.province && <p className="flex gap-2 text-xs text-muted-foreground mb-4"><MapPin size={14} className="shrink-0" />{order.municipality}-{order.ward_number}, {order.district}, {order.province}</p>}
       {order.status === 'cancelled' && <div className="bg-muted p-3 rounded-md text-sm mb-4"><p className="font-semibold flex gap-2 items-center"><XCircle size={15} />Cancelled by {order.cancelled_by || 'seller'}</p><p className="mt-1 text-muted-foreground">{cancellationLabel(order.cancellation_reason)}</p>{order.cancellation_details && <p className="mt-1 break-words text-muted-foreground">{order.cancellation_details}</p>}<p className="text-xs mt-2">No payment due · Cash on Delivery</p></div>}
