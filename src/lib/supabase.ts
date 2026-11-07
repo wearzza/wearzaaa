@@ -1,5 +1,6 @@
 import { createClient } from '@supabase/supabase-js';
 import { PUBLIC_SUPABASE_ANON_KEY, PUBLIC_SUPABASE_URL } from './publicConfig';
+import type { ProductVariant, ProductType, SizeSystem } from './productVariants';
 
 const envUrl = import.meta.env.VITE_SUPABASE_URL;
 const envKey = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY;
@@ -78,6 +79,11 @@ export interface Product {
   video_url?: string;
   video_data?: string;
   stock: number;
+  product_type?: ProductType;
+  size_system?: SizeSystem;
+  measurement_unit?: 'cm' | 'in';
+  variants?: ProductVariant[];
+  free_delivery?: boolean;
   is_active: boolean;
   avg_rating: number;
   review_count: number;
@@ -127,6 +133,13 @@ export interface OrderItem {
   product_name: string;
   product_image?: string;
   selected_size?: string;
+  selected_variant_id?: string;
+  selected_color?: string;
+  selected_size_system?: string;
+  selected_width?: number;
+  selected_length?: number;
+  measurement_unit?: string;
+  free_delivery?: boolean;
   seller_id: string;
   quantity: number;
   unit_price: number;
