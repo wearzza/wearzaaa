@@ -14,7 +14,8 @@ export default function ProductCard({ product, onClick }: { product: Product; on
 
   function handleAdd(e: React.MouseEvent) {
     e.stopPropagation();
-    addToCart(product);
+    if (product.variants?.length) { onClick(); return; }
+    if (!addToCart(product)) return;
     setAdded(true);
     setTimeout(() => setAdded(false), 600);
   }
@@ -58,16 +59,17 @@ export default function ProductCard({ product, onClick }: { product: Product; on
         </div>
 
         <div className="flex items-center gap-2">
-          <span className="text-base font-black" style={{ color: '#ff3b30' }}>Rs. {product.real_price.toLocaleString()}</span>
+          <span className="text-base font-black text-primary">{product.variants?.length ? 'From ' : ''}Rs. {product.real_price.toLocaleString()}</span>
           {product.cut_price && <span className="text-xs text-gray-400 line-through">Rs. {product.cut_price.toLocaleString()}</span>}
         </div>
 
+        {product.free_delivery && <p className="text-xs font-semibold text-chart-green mt-2">Free delivery</p>}
         <button
           onClick={handleAdd}
           className="mt-3 w-full py-2 rounded-xl text-xs font-bold flex items-center justify-center gap-1.5 transition-all"
           style={{ background: added ? '#22c55e' : '#ff3b30', color: 'white', transform: added ? 'scale(0.95)' : 'scale(1)' }}
         >
-          <ShoppingCart size={12} /> {added ? 'Added!' : 'Add to Cart'}
+          <ShoppingCart size={12} /> {added ? 'Added!' : product.variants?.length ? 'Choose options' : 'Add to Cart'}
         </button>
       </div>
     </div>

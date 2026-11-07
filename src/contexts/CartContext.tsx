@@ -1,11 +1,12 @@
 import { createContext, useContext, useState, useCallback, ReactNode } from 'react';
 import { Product } from '../lib/supabase';
+import { cartKey, itemPrice, itemStock, selectionFor } from '../lib/productVariants';
 
-export interface CartItem { product: Product; quantity: number; selectedSize?: string; }
+export interface CartItem { product: Product; quantity: number; selectedSize?: string; variantId?: string; }
 
 interface CartCtx {
   items: CartItem[];
-  addToCart: (p: Product, qty?: number, selectedSize?: string) => void;
+  addToCart: (p: Product, qty?: number, selectedSize?: string, variantId?: string) => boolean;
   removeFromCart: (id: string) => void;
   updateQty: (id: string, qty: number) => void;
   clearCart: () => void;
@@ -18,20 +19,25 @@ const Ctx = createContext<CartCtx | null>(null);
 export function CartProvider({ children }: { children: ReactNode }) {
   const [items, setItems] = useState<CartItem[]>([]);
 
-  const addToCart = useCallback((p: Product, qty = 1, selectedSize?: string) => {
+  const addToCart = useCallback((p: Product, qty = 1, selectedSize?: string, variantId?: string) => {
+    const variant = selectionFor(p, variantId);
+    if (!p.is_active || (p.variants?.length && !variant)) return false;
+    const item = { product: p, quantity: qty, selectedSize: variant?.size || selectedSize, variantId };
+    if (itemStock(item) < 1 || qty < 1) return false;
     setItems(prev => {
-      const ex = prev.find(i => i.product.id === p.id && i.selectedSize === selectedSize);
+      const ex = prev.find(i => cartKey(i) === cartKey(item));
       return ex
-        ? prev.map(i => i.product.id === p.id && i.selectedSize === selectedSize ? { ...i, quantity: i.quantity + qty } : i)
-        : [...prev, { product: p, quantity: qty, selectedSize }];
+        ? prev.map(i => cartKey(i) === cartKey(item) ? { ...item, quantity: Math.min(itemStock(item), i.quantity + qty) } : i)
+        : [...prev, { ...item, quantity: Math.min(itemStock(item), qty) }];
     });
+    return true;
   }, []);
 
-  const removeFromCart = useCallback((id: string) => setItems(p => p.filter(i => i.product.id !== id)), []);
+  const removeFromCart = useCallback((id: string) => setItems(p => p.filter(i => cartKey(i) !== id)), []);
 
   const updateQty = useCallback((id: string, qty: number) => {
-    if (qty <= 0) setItems(p => p.filter(i => i.product.id !== id));
-    else setItems(p => p.map(i => i.product.id === id ? { ...i, quantity: qty } : i));
+    if (qty <= 0) setItems(p => p.filter(i => cartKey(i) !== id));
+    else setItems(p => p.map(i => cartKey(i) === id ? { ...i, quantity: Math.min(itemStock(i), qty) } : i));
   }, []);
 
   const clearCart = useCallback(() => setItems([]), []);
@@ -40,7 +46,7 @@ export function CartProvider({ children }: { children: ReactNode }) {
     <Ctx.Provider value={{
       items, addToCart, removeFromCart, updateQty, clearCart,
       totalItems: items.reduce((s, i) => s + i.quantity, 0),
-      totalPrice: items.reduce((s, i) => s + i.product.real_price * i.quantity, 0),
+      totalPrice: items.reduce((s, i) => s + itemPrice(i) * i.quantity, 0),
     }}>
       {children}
     </Ctx.Provider>
