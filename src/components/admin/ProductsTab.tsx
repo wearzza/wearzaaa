@@ -5,6 +5,7 @@ import { fetchAllRows } from '../../lib/data';
 import { hiddenListingUpdate } from '../../lib/productListing';
 import Button from '../ui/Button';
 import Dialog from '../ui/Dialog';
+import { sizeLabel } from '../../lib/productVariants';
 
 type Action = 'cancel' | 'reject';
 const money = (value: number) => `Rs. ${Number(value).toLocaleString()}`;
@@ -71,6 +72,8 @@ export default function ProductsTab() {
       {viewing.image_urls.length > 0 && <div className="flex gap-2 overflow-x-auto mb-4">{viewing.image_urls.map((url, i) => <img key={i} src={url} alt={`${viewing.name} photo ${i + 1}`} className="w-32 h-40 object-cover rounded-md shrink-0 bg-muted" />)}</div>}
       <dl className="grid grid-cols-2 gap-3 text-sm mb-4"><div className="min-w-0"><dt className="text-xs text-muted-foreground">Shop</dt><dd className="font-semibold break-words">{viewing.sellers?.business_name || 'Unknown shop'}</dd></div><div><dt className="text-xs text-muted-foreground">Shop status</dt><dd className="capitalize">{viewing.sellers?.status || 'Unknown'}</dd></div><div><dt className="text-xs text-muted-foreground">Price</dt><dd className="font-bold">{money(viewing.real_price)}</dd></div><div><dt className="text-xs text-muted-foreground">Stock</dt><dd>{viewing.stock}</dd></div><div className="col-span-2"><dt className="text-xs text-muted-foreground">Categories</dt><dd className="capitalize break-words">{(viewing.categories?.length ? viewing.categories : [viewing.category]).join(', ').replace(/_/g, ' ')}</dd></div><div><dt className="text-xs text-muted-foreground">Listing status</dt><dd>{viewing.is_active ? 'Active' : 'Unavailable'}</dd></div><div><dt className="text-xs text-muted-foreground">Added</dt><dd>{new Date(viewing.created_at).toLocaleDateString()}</dd></div><div className="col-span-2"><dt className="text-xs text-muted-foreground">Product ID</dt><dd className="break-all">{viewing.id}</dd></div></dl>
       {viewing.description && <p className="text-sm whitespace-pre-wrap break-words mb-4">{viewing.description}</p>}
+      <p className="text-sm mb-4">Delivery: {viewing.free_delivery ? 'Free delivery' : 'Fee confirmed by seller'}</p>
+      {(viewing.variants?.length || 0) > 0 && <section className="border-t border-border pt-3 mb-4"><h3 className="font-bold text-sm mb-3">Size & color options</h3><div className="space-y-3">{viewing.variants?.map(v => <div key={v.id} className="border-b border-border pb-2 text-xs"><p className="font-semibold">{sizeLabel(v.size, viewing.size_system)} · {v.color}</p><p className="text-muted-foreground mt-1">{money(v.price)} · Stock {v.stock}{v.width ? ` · Width ${v.width} ${viewing.measurement_unit}` : ''}{v.length ? ` · Length ${v.length} ${viewing.measurement_unit}` : ''}</p></div>)}</div></section>}
       {(viewing.video_data || viewing.video_url) && <video src={viewing.video_data || viewing.video_url} controls className="w-full max-h-64 mb-4 rounded-md" />}
       {actions(viewing)}
     </Dialog>}

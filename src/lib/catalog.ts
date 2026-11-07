@@ -56,7 +56,8 @@ export function scoreProduct(p: Product, query: string, cats: Category[] = []) {
   const name = norm(p.name), desc = norm(p.description || ''), shop = norm(p.sellers?.business_name || '');
   const catSlugs = (p.categories?.length ? p.categories : [p.category]) as string[];
   const catText = norm(catSlugs.map(c => `${c} ${cats.find(x => x.slug === c)?.label || ''}`).join(' '));
-  const words = { name: name.split(' '), all: `${name} ${desc} ${shop} ${catText}`.split(' ') };
+  const optionText = norm((p.variants || []).map(v => `${v.size} ${v.color}`).join(' '));
+  const words = { name: name.split(' '), all: `${name} ${desc} ${shop} ${catText} ${optionText}`.split(' ') };
   let score = name.includes(q) ? 50 : 0;
   for (const t of q.split(' ')) {
     const variants = [t, t.replace(/s$/, ''), ...(SYN[t] || [])];
@@ -66,6 +67,7 @@ export function scoreProduct(p: Product, query: string, cats: Category[] = []) {
       else if (catText.includes(v)) best = Math.max(best, 8);
       else if (shop.includes(v)) best = Math.max(best, 6);
       else if (desc.includes(v)) best = Math.max(best, 4);
+       else if (optionText.split(' ').includes(v)) best = Math.max(best, 5);
       else if (words.all.some(w => close(w, v))) best = Math.max(best, 3);
     }
     if (!best) return 0;
