@@ -10,3 +10,5 @@
 - [ ] Remove the checkout-phone field from My Orders while keeping saved guest tracking private.
 - [ ] Add admin all-products viewing and Cancel/Reject controls, preserving existing orders.
 - [ ] Verify phone-free tracking and product moderation on desktop and phone.
+- [ ] Add seller size/color variants, size units, optional measurements, variant prices and individual/selected/all free delivery.
+- [ ] Carry selected options, prices and delivery through customer purchases and saved order details; test desktop and phone.
