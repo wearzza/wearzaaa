@@ -64,6 +64,13 @@
       "when": 1793840723656,
       "tag": "0008_commission_payments",
       "breakpoints": true
+    },
+    {
+      "idx": 9,
+      "version": "7",
+      "when": 1794040463682,
+      "tag": "0009_product_size_color_variants_and_delivery",
+      "breakpoints": true
     }
   ]
 }

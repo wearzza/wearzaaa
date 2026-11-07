@@ -203,39 +203,60 @@ export type Database = {
       order_items: {
         Row: {
           created_at: string | null
+          free_delivery: boolean
           id: string
+          measurement_unit: string | null
           order_id: string
           product_id: string | null
           product_image: string | null
           product_name: string
           quantity: number
+          selected_color: string | null
+          selected_length: number | null
           selected_size: string | null
+          selected_size_system: string | null
+          selected_variant_id: string | null
+          selected_width: number | null
           seller_id: string
           total_price: number
           unit_price: number
         }
         Insert: {
           created_at?: string | null
+          free_delivery?: boolean
           id?: string
+          measurement_unit?: string | null
           order_id: string
           product_id?: string | null
           product_image?: string | null
           product_name: string
           quantity?: number
+          selected_color?: string | null
+          selected_length?: number | null
           selected_size?: string | null
+          selected_size_system?: string | null
+          selected_variant_id?: string | null
+          selected_width?: number | null
           seller_id: string
           total_price: number
           unit_price: number
         }
         Update: {
           created_at?: string | null
+          free_delivery?: boolean
           id?: string
+          measurement_unit?: string | null
           order_id?: string
           product_id?: string | null
           product_image?: string | null
           product_name?: string
           quantity?: number
+          selected_color?: string | null
+          selected_length?: number | null
           selected_size?: string | null
+          selected_size_system?: string | null
+          selected_variant_id?: string | null
+          selected_width?: number | null
           seller_id?: string
           total_price?: number
           unit_price?: number
@@ -409,15 +430,20 @@ export type Database = {
           created_at: string | null
           cut_price: number | null
           description: string | null
+          free_delivery: boolean
           id: string
           image_urls: string[]
           is_active: boolean
+          measurement_unit: string
           name: string
+          product_type: string
           real_price: number
           review_count: number
           seller_id: string
+          size_system: string
           stock: number
           updated_at: string | null
+          variants: Json
           video_data: string | null
           video_url: string | null
         }
@@ -428,15 +454,20 @@ export type Database = {
           created_at?: string | null
           cut_price?: number | null
           description?: string | null
+          free_delivery?: boolean
           id?: string
           image_urls?: string[]
           is_active?: boolean
+          measurement_unit?: string
           name: string
+          product_type?: string
           real_price: number
           review_count?: number
           seller_id: string
+          size_system?: string
           stock?: number
           updated_at?: string | null
+          variants?: Json
           video_data?: string | null
           video_url?: string | null
         }
@@ -447,15 +478,20 @@ export type Database = {
           created_at?: string | null
           cut_price?: number | null
           description?: string | null
+          free_delivery?: boolean
           id?: string
           image_urls?: string[]
           is_active?: boolean
+          measurement_unit?: string
           name?: string
+          product_type?: string
           real_price?: number
           review_count?: number
           seller_id?: string
+          size_system?: string
           stock?: number
           updated_at?: string | null
+          variants?: Json
           video_data?: string | null
           video_url?: string | null
         }
