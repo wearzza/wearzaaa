@@ -733,6 +733,16 @@ export type Database = {
         Args: { _id: string; _name: string }
         Returns: string
       }
+      wearza_place_order: {
+        Args: {
+          _customer: Json
+          _items: Json
+          _promo_code?: string
+          _seller_id: string
+          _token_hash: string
+        }
+        Returns: Json
+      }
       wearza_tracked_order: {
         Args: { _order_id: string; _token: string }
         Returns: Json
